@@ -1,0 +1,20 @@
+#
+# NOTICE: When changing maximum allowed number of channels, change both
+#
+# ConfigReply.chconfig            max_count: N
+# WaveGroup.wave                  max_count: N
+#
+
+EchoRequest.content             max_size: 40
+EchoReply.content               max_size: 40
+
+ChannelConfig.name              max_size: 10
+ChannelConfig.unit              max_size: 10
+
+ConfigReply.chconfig            max_count: 2    # change WaveGroup.wave!
+
+Wave.samples                    max_count: 500
+Wave.samples                    fixed_count: true
+Wave.samples                    packed_struct: true
+
+WaveGroup.wave                  max_count: 2    # change ConfigReply.chconfig!

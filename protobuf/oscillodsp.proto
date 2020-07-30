@@ -1,0 +1,103 @@
+syntax = "proto2";
+
+/*
+ * Definitions of error codes
+ */
+enum ErrorCode {
+    NoError = 0;
+    NotConfiguredYet = 1;
+    ConfigError = 2;
+    ParamError = 3;
+}
+
+/*
+ * Definitions of some parameters and data formats
+ */
+enum TriggerMode {
+    Auto = 0;
+    Normal = 1;
+    Single = 2;     // As same as Auto for DSP
+}
+
+enum TriggerType {
+    RisingEdge = 0;
+    FallingEdge = 1;
+}
+
+/*
+ * Definitions of messages from host to DSP
+ */
+message EchoRequest {
+    required string content = 1;
+}
+
+message GetWaveGroup {
+}
+
+message Terminate {
+}
+
+message Configure {
+    required uint32 resolution = 1;  // quantization bits of Wave sample
+    required TriggerMode trigmode = 2;
+    required TriggerType trigtype = 3;
+    required uint32 ch_trig = 4;
+    required float triglevel = 5;
+    required float timescale = 6;   // 0.0 means "no timescale update"
+}
+
+message MessageToDSP {
+    required uint32 id = 1;
+    oneof payload {
+        EchoRequest echoreq = 2;
+        Configure config = 3;
+        GetWaveGroup getwave = 4;
+        Terminate terminate = 5;
+    }
+}
+
+/*
+ * Definitions of messages from DSP to host
+ */
+message Acknowledge {
+    required ErrorCode err = 1;
+}
+
+message EchoReply {
+    required string content = 1;
+}
+
+message ChannelConfig {
+    required string name = 1;
+    required string unit = 2;
+    required float min = 3;
+    required float max = 4;
+}
+
+message ConfigReply {
+    required ErrorCode err = 1;
+    required float samplerate = 2;
+    required float default_timescale = 3;
+    required float max_timescale = 4;
+    repeated ChannelConfig chconfig = 5;
+}
+
+message Wave {
+    required uint32 ch_id = 1;
+    repeated sint32 samples = 2 [packed=true];
+}
+
+message WaveGroup {
+    required bool triggered = 1;
+    repeated Wave wave = 2;
+}
+
+message MessageToHost {
+    required uint32 id = 1;
+    oneof payload {
+        Acknowledge ack = 2;
+        EchoReply echorep = 3;
+        WaveGroup wavegroup = 4;
+        ConfigReply configreply = 5;
+    }
+}

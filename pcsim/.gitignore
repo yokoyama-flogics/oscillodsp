@@ -1,0 +1,5 @@
+pcsim
+oscillodsp.pb.*
+*.o
+Makefile.bak
+ptyname.txt
