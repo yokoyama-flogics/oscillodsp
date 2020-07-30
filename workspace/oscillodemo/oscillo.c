@@ -197,17 +197,6 @@ int oscillo_pass_one(int ch, sample_t val)
 
 
 /**
- * Process oscillo library
- *
- * @param val is passed sample value
- */
-int oscillo_proc(void)
-{
-    return 0;
-}
-
-
-/**
  * Configure oscillo mode
  */
 int oscillo_config(Configure arg_config, ConfigReply *arg_config_reply)

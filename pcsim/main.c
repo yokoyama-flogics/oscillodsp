@@ -57,8 +57,6 @@ int main(int argc, char **argv)
         active = tv.tv_sec % 4 < 2;
         oscillo_pass_one(ch0, oscillo_get_demo1_value(active));
         oscillo_pass_one(ch1, oscillo_get_demo2_value(true));
-
-        oscillo_proc();
     }
 
     return 0;

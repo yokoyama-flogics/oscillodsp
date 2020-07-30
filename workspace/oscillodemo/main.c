@@ -95,8 +95,6 @@ xdc_Void func_task_main(xdc_UArg uarg0, xdc_UArg uarg1)
         active = Clock_getTicks() % 4000 < 2000;
         oscillo_pass_one(ch0, oscillo_get_demo1_value(active));
         oscillo_pass_one(ch1, oscillo_get_demo2_value(true));
-
-        oscillo_proc();
     }
 
 #ifdef DEBUG_UART

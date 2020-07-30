@@ -10,7 +10,6 @@ typedef struct {
 int oscillo_init(float sample_rate, float default_timescale);
 int oscillo_reinit(void);
 int oscillo_pass_one(int ch, sample_t val);
-int oscillo_proc(void);
 int oscillo_config(Configure arg_config, ConfigReply *arg_config_reply);
 int oscillo_config_ch(const char *name, const char *unit, float min, float max);
 int oscillo_get_waves(WaveGroup *waves);
