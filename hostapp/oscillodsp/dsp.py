@@ -87,7 +87,7 @@ class DSP:
 
     def __del__(self):
         self.logger.info("Deleting DSP object")
-        self.logger.removeHandler(self.log_handler)
+        del self.logger
 
     def send_msg(self, withId=True):
         """
