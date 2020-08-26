@@ -169,6 +169,16 @@ class Oscillo(widgets.HBox):
         l.addHandler(loghandler)
         self.logger = l
 
+        # Identify underling OS (Linux, Windows, etc.) and determine asyncio
+        # sleep length
+        if sys.platform == 'win32':
+            self.sleep_len = 0.1
+            self.logger.info(
+                'Detected running on Windows, so using a special sleep length.'
+            )
+        else:
+            self.sleep_len = 0.01
+
         # Connecting to peer DSP
         self.peer = dsp.DSP(dsp_tty, dsp_bitrate, loglevel=dsp_loglevel)
 
@@ -319,7 +329,6 @@ class Oscillo(widgets.HBox):
 
         # Configure default time-scale
         self.tscale_new = config_reply.default_timescale
-        self.logger.warning(str(math.log10(1 / config_reply.max_timescale)))
         self.slider_tscale.min = math.log10(1 / config_reply.max_timescale)
 
         # Finally assemble all widgets in one box
@@ -557,7 +566,7 @@ class Oscillo(widgets.HBox):
             if self.stopped:
                 break
 
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(self.sleep_len)
 
     def start(self):
         """
