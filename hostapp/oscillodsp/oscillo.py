@@ -480,10 +480,9 @@ class Oscillo(widgets.HBox):
                     # xser is common among multiple channels, so assign here
                     xser = np.linspace(xlim[0], xlim[1], n_xsamples)
 
+                    ct_sub_ax = 0
                     for idx, wave in enumerate(waves.wave):
                         chconfig_idx = self.last_reply.chconfig[idx]
-
-                        ct_sub_ax = 0
 
                         if idx == self.ch_active:
                             cur_ax = self.ax
@@ -524,7 +523,10 @@ class Oscillo(widgets.HBox):
                             xser, yser, DEFAULT_CH_COLOR[idx], label=label)
 
                         # Append the line to lines[] to show legend on the
-                        # screen
+                        # screen.
+                        # Note that this is required ONLY for legend purpose.
+                        # Even without this "lines", plottings themselves are
+                        # accomplished.
                         lines.append(l)
 
                 # xlim is common among channels, so process here
