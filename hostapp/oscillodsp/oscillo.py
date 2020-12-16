@@ -323,8 +323,10 @@ class Oscillo(widgets.HBox):
 
         # Configure Channel menu
         self.options = []
+        self.view_enabled_ch = []
         for idx, ch in enumerate(config_reply.chconfig):
             self.options.append(("{:d}: {:s}".format(idx, ch.name), idx))
+            self.view_enabled_ch.append(True)
         self.menu_ch.options = self.options
 
         # Configure default time-scale
@@ -519,15 +521,16 @@ class Oscillo(widgets.HBox):
                             label += ' (active)'
 
                         # Finally plot line of a channel
-                        (l, ) = cur_ax.plot(
-                            xser, yser, DEFAULT_CH_COLOR[idx], label=label)
+                        if self.view_enabled_ch[idx]:
+                            (l, ) = cur_ax.plot(
+                                xser, yser, DEFAULT_CH_COLOR[idx], label=label)
 
-                        # Append the line to lines[] to show legend on the
-                        # screen.
-                        # Note that this is required ONLY for legend purpose.
-                        # Even without this "lines", plottings themselves are
-                        # accomplished.
-                        lines.append(l)
+                            # Append the line to lines[] to show legend on the
+                            # screen.
+                            # Note that this is required ONLY for legend
+                            # purpose.  Even without this "lines", plottings
+                            # themselves are accomplished.
+                            lines.append(l)
 
                 # xlim is common among channels, so process here
                 self.ax.set_xlim(xlim)
