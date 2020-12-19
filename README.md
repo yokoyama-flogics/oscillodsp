@@ -4,7 +4,7 @@ Copyright (c) 2020, Chubu University and Firmlogics
 
 All rights reserved.
 
-![screen sample](hostapp/img/screen_sample.png)
+[![YouTube video](https://img.youtube.com/vi/cJITVeQGVG0/0.jpg)](https://www.youtube.com/watch?v=cJITVeQGVG0)
 
 Currently, only Japanese document is available.
 Sorry for your inconvenience.
