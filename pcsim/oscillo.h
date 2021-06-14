@@ -15,6 +15,7 @@ int oscillo_config_ch(const char *name, const char *unit, float min, float max);
 int oscillo_get_waves(WaveGroup *waves);
 float oscillo_get_demo1_value(bool enabled);
 float oscillo_get_demo2_value(bool enabled);
+float oscillo_get_demo3_value(bool enabled);
 
 #define __OSCILLO_H__
 #endif /* ! defined(__OSCILLO_H__) */

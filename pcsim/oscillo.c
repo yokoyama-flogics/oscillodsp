@@ -336,7 +336,16 @@ static int get_pos(bool *triggered)
     cond_met = false;
     tail_pos = correct_idx(idx_write_buffer[ch] - 1);
     margin_x = (int) ((float) HIST_MARGIN_X * N_WAVE_SAMPLES);
+
     margin_y = (int) ((float) HIST_MARGIN_Y * (1 << config.resolution));
+    /*
+     * Depending on the edge direction (or TriggerType), we need to invert
+     * margin_y value.
+     */
+    if (config.trigtype == TriggerType_RisingEdge)
+        margin_y *= -1;
+    else
+        margin_y *= 1;
 
     for (i = 0; i < N_WAVE_SAMPLES; i ++) {
         pos_buf = correct_idx(tail_pos - scale_index(i + N_WAVE_SAMPLES / 2));
@@ -484,6 +493,28 @@ float oscillo_get_demo2_value(bool enabled)
     val = noise;
     if (enabled)
         val += 1.5 * (deg % 180 < 90 ? 1.0 : -1.0);
+
+    deg ++;
+    if (deg >= 360)
+        deg = 0;
+
+    return val;
+}
+
+
+/**
+ * Return a demo (version 3) value
+ */
+float oscillo_get_demo3_value(bool enabled)
+{
+    static int deg = 0;
+    float val;
+    float noise;
+
+    noise = get_noise(0.2);
+    val = noise;
+    if (enabled)
+        val += 4.0 * sinf((float) deg * 2 / 180 * M_PI) + 4.0;
 
     deg ++;
     if (deg >= 360)
