@@ -1,37 +1,38 @@
-# Copyright (c) 2020, Chubu University and Firmlogics
-#
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice, this
-#    list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-#    this list of conditions and the following disclaimer in the documentation
-#    and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
+Copyright (c) 2020-2021, Chubu University and Firmlogics
 
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+"""
 
 from datetime import datetime, timedelta
-from google import protobuf
 import logging
 import struct
 import sys
 from . import oscillodsp_pb2
 
 FTDI_PRODUCT_IDS = {0xa6d0}
+DEFAULT_TIMEOUT_SECONDS = 3.0  # wait forever if None
 
 
 def dump(s):
@@ -49,6 +50,40 @@ def dump(s):
     print("")
 
 
+def open_interface(tty, bitrate, logger=None):
+    if logger:
+        logger.debug("open_interface: {} {:d}".format(tty, bitrate))
+
+    # Different procedures are required for PyFTDI and PySerial
+    if len(tty) > 4 and tty[:4] == "ftdi":
+        from pyftdi.ftdi import Ftdi
+        import pyftdi.serialext
+
+        for pid in FTDI_PRODUCT_IDS:
+            try:
+                Ftdi.add_custom_product(Ftdi.DEFAULT_VENDOR, pid)
+            except ValueError:
+                pass
+
+        if logger:
+            logger.info("Using pyftdi")
+
+        Ftdi.show_devices()
+        ser = pyftdi.serialext.serial_for_url(
+            tty, baudrate=bitrate, timeout=DEFAULT_TIMEOUT_SECONDS)
+        # XXX should raise exception for illegal caudrate
+    else:
+        import serial
+        if logger:
+            logger.debug("Using pyserial")
+        try:
+            ser = serial.Serial(tty, bitrate, timeout=DEFAULT_TIMEOUT_SECONDS)
+        except serial.SerialException:
+            raise
+
+    return ser
+
+
 class DSP:
     """
     DSP class definition to abstract communication with peer DSP
@@ -58,32 +93,34 @@ class DSP:
                  bitrate,
                  loglevel=logging.WARNING,
                  loghandler=logging.StreamHandler(sys.__stdout__),
+                 console_handler=None,
+                 file_handler=None,
                  logformatter=logging.Formatter('dsp.py: %(message)s')):
 
-        l = logging.getLogger("dsp")
-        l.setLevel(loglevel)
-        loghandler.setFormatter(logformatter)
-        l.addHandler(loghandler)
-        self.logger = l
+        self.debug_ct = 0
 
-        # Different procedures are required for PyFTDI and PySerial
-        if len(tty) > 4 and tty[:4] == "ftdi":
-            from pyftdi.ftdi import Ftdi
-            import pyftdi.serialext
-            for pid in FTDI_PRODUCT_IDS:
-                Ftdi.add_custom_product(Ftdi.DEFAULT_VENDOR, pid)
-            self.logger.info("Using pyftdi")
-            Ftdi.show_devices()
-            self.ser = pyftdi.serialext.serial_for_url(tty, baudrate=bitrate)
+        logger = logging.getLogger("dsp")
+        logger.setLevel(loglevel)
+
+        if console_handler:
+            console_handler.setFormatter(logformatter)
+            logger.addHandler(console_handler)
+            logger.addHandler(file_handler)
         else:
-            import serial
-            self.logger.info("Using pyserial")
-            self.ser = serial.Serial(tty, bitrate, timeout=None)
+            # For backward compatibility
+            loghandler.setFormatter(logformatter)
+            logger.addHandler(loghandler)
+        self.logger = logger
+
+        self.ser = open_interface(tty, bitrate, self.logger)
 
         self.msg = oscillodsp_pb2.MessageToDSP()
         self.id = 0
         self.last_recvdtime = datetime.now()
         self.recvd_bytes = 0
+
+    def get_logger(self):
+        return self.logger
 
     def __del__(self):
         self.logger.info("Deleting DSP object")
@@ -187,6 +224,12 @@ class DSP:
         @param timescale is time length (in seconds) corresponds to
                oscilloscope screen width
         """
+        DEBUG_TIMEOUT = False
+        if DEBUG_TIMEOUT:
+            self.debug_ct += 1
+            print("debug_ct:", self.debug_ct)
+            if (self.debug_ct > 3):
+                raise Exception('Timeout.  No response from DSP.')
 
         self.msg.config.resolution = resolution
         self.msg.config.trigmode = trigmode
@@ -205,6 +248,13 @@ class DSP:
         Message to DSP: GetWaveGroup
         Returns a WaveGroup object
         """
+        DEBUG_TIMEOUT = False
+        if DEBUG_TIMEOUT:
+            self.debug_ct += 1
+            print("debug_ct:", self.debug_ct)
+            if (self.debug_ct > 10):
+                raise Exception('Timeout.  No response from DSP.')
+
         self.msg.getwave.SetInParent()
         id = self.send_msg()
         return self.recv_msg(id).wavegroup

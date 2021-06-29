@@ -42,21 +42,24 @@ int main(int argc, char **argv)
     struct timeval tv;
     int ch0;
     int ch1;
+    int ch2;
 
     com_init();
     oscillo_init(1e6, 1e-3);
 
     ch0 = oscillo_config_ch("input", "volts", -4.0, 5.0);
     ch1 = oscillo_config_ch("output", "amperes", -3.0, 3.0);
+    ch2 = oscillo_config_ch("other", "watt", 0.0, 10.0);
 
     for (;;) {
         com_proc();
 
         gettimeofday(&tv, NULL);
 
-        active = tv.tv_sec % 4 < 2;
+        active = tv.tv_sec % 8 < 4;
         oscillo_pass_one(ch0, oscillo_get_demo1_value(active));
         oscillo_pass_one(ch1, oscillo_get_demo2_value(true));
+        oscillo_pass_one(ch2, oscillo_get_demo3_value(true));
     }
 
     return 0;

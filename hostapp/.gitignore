@@ -3,3 +3,6 @@ oscillodsp/oscillodsp_pb2.py
 ptyname.txt
 20*.png
 20*.csv
+tags
+*.swp
+*.keep
