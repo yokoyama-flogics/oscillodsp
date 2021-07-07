@@ -2,9 +2,20 @@
 
 block_cipher = None
 
-binaries = [
-    ('C:\\Windows\\System32\\libusb0.dll', '.'),
-]
+binaries = []
+try:
+    from pyftdi.ftdi import Ftdi
+
+    Ftdi.list_devices()
+    binaries.append(('C:\\Windows\\System32\\libusb0.dll', '.'))
+
+except ValueError as err:
+    if 'No backend available' in str(err):
+        # This occurs if libusb is not installed.
+        # Refer https://eblot.github.io/pyftdi/troubleshooting.html
+        pass
+    else:
+        raise
 
 a = Analysis(['qtoscillo.py'],
              pathex=['.'],
