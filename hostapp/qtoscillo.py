@@ -131,11 +131,19 @@ def com_ports():
         items.append({'name': p.device, 'desc': None})
 
     # Next, add FTDI devices
-    for d, num_interfaces in Ftdi.list_devices():
-        for i in range(num_interfaces):
-            url = 'ftdi://ftdi:0x{:x}:{}/{:d}'.format(d.pid, d.sn, i + 1)
-            desc = d.description
-            items.append({'name': url, 'desc': desc})
+    try:
+        for d, num_interfaces in Ftdi.list_devices():
+            for i in range(num_interfaces):
+                url = 'ftdi://ftdi:0x{:x}:{}/{:d}'.format(d.pid, d.sn, i + 1)
+                desc = d.description
+                items.append({'name': url, 'desc': desc})
+    except ValueError as err:
+        if 'No backend available' in str(err):
+            # This occurs if libusb is not installed.
+            # Refer https://eblot.github.io/pyftdi/troubleshooting.html
+            pass
+        else:
+            raise
 
     if os.name == 'posix':
         items.append({'name': 'pcsim', 'desc': None})
