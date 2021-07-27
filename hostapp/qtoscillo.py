@@ -1174,6 +1174,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
                 self.button_single.setEnabled(
                     (self.trigmode == TriggerMode.Single))
 
+                self.logger.debug("app.target.config()")
                 config_reply = app.target.config(
                     resolution=app.quantize_bits,
                     trigmode=self.trigmode,
