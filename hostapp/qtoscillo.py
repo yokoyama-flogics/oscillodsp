@@ -73,6 +73,7 @@ LOGVIEW_UPDATE_INTERVAL_SEC = 0.5
 VISIB_BUTTON_HEIGHT = 20
 VISIB_BUTTON_HEIGHT_MARGIN = 6  # XXX  more sophisticated way?
 LOGGING_DISABLE = logging.CRITICAL + 1
+MIN_UPDATE_INTERVAL = 30  # milliseconds
 
 
 def find_in_listdict(listdict, search_key, val, return_key):
@@ -1423,7 +1424,10 @@ class OscilloWidget(QtWidgets.QMainWindow):
             self.tscale_new = self.tscale
 
             self.ani = FuncAnimation(
-                self.canvas.figure, self.update_plot, blit=False, interval=1)
+                self.canvas.figure,
+                self.update_plot,
+                blit=False,
+                interval=MIN_UPDATE_INTERVAL)
             self.canvas.draw()  # In the blit=False case, this is required
 
             self.running = True
