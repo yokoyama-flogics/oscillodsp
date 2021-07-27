@@ -1155,6 +1155,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
         """
         from oscillodsp.utils import modified_ylim
         from matplotlib.ticker import EngFormatter
+        import time
 
         app = self.oscillo_app
 
@@ -1194,9 +1195,16 @@ class OscilloWidget(QtWidgets.QMainWindow):
 
             # Once triggered for single-shot mode, re-use wave data
             if self.trigmode != TriggerMode.Single or not self.triggered:
+                start_get_wave = time.time()
+
                 self.waves = app.target.get_waves()  # Trying update wave data
                 if len(self.waves.wave) > 0:
                     self.triggered = self.waves.triggered
+
+                update_interval = (time.time() - start_get_wave) * 1000
+                if update_interval < MIN_UPDATE_INTERVAL:
+                    update_interval = MIN_UPDATE_INTERVAL
+                self.ani.event_source.interval = update_interval
 
         except Exception as err:
             if 'Timeout' in str(err) or 'timeout' in str(err):
