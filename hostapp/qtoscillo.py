@@ -960,9 +960,10 @@ class OscilloWidget(QtWidgets.QMainWindow):
         self.trigmode_new = index
 
     def slider_tscale_changed(self, value):
-        self.tscale_new = slider_tscale_to_actual_tscale(
-            value, self.max_timescale)
-        self.logger.debug("tscale_changed: {:e}".format(self.tscale_new))
+        if hasattr(self, 'max_timescale'):
+            self.tscale_new = slider_tscale_to_actual_tscale(
+                value, self.max_timescale)
+            self.logger.debug("tscale_changed: {:e}".format(self.tscale_new))
 
     def button_single_clicked(self):
         self.logger.debug("button_single: clicked")
@@ -993,12 +994,14 @@ class OscilloWidget(QtWidgets.QMainWindow):
             self.confman.set(self.LAST_DIR, os.path.dirname(filename[0]))
 
     def slider_mag_changed(self, value):
-        self.logger.debug("slider_mag: changed")
-        self.mag10[self.ch_active] = value
+        if hasattr(self, 'mag10'):
+            self.mag10[self.ch_active] = value
+            self.logger.debug("slider_mag: changed")
 
     def slider_ypos_changed(self, value):
-        self.logger.debug("slider_ypos: changed")
-        self.ypos10[self.ch_active] = value
+        if hasattr(self, 'ypos10'):
+            self.ypos10[self.ch_active] = value
+            self.logger.debug("slider_ypos: changed")
 
     def action_new_triggered(self):
         self.logger.debug("action_new: triggered")
