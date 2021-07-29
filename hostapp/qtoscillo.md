@@ -1,4 +1,4 @@
-# QtOscillo（GUI版OscilloDSP）利用マニュアル（1.0版）
+# QtOscillo（GUI版OscilloDSP）利用マニュアル（1.1版）
 
 ## 目次
 
