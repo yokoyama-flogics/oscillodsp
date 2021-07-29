@@ -1,3 +1,7 @@
+---
+date: 2021年7月29日
+...
+
 # QtOscillo（GUI版OscilloDSP）利用マニュアル（1.1版）
 
 ## 目次
