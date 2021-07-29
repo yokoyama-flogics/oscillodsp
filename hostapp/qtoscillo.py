@@ -762,8 +762,10 @@ class OscilloWidget(QtWidgets.QMainWindow):
         button_save_image = QPushButton('Save as Image File')
         button_save_image.clicked.connect(self.button_save_image_clicked)
 
-        button_save_csv = QPushButton('Save as CSV File')
-        button_save_csv.clicked.connect(self.button_save_csv_clicked)
+        _ = QPushButton('Save as CSV File')
+        self.button_save_csv = _
+        _.setEnabled(False)
+        _.clicked.connect(self.button_save_csv_clicked)
 
         vbox = QVBoxLayout()
         vbox.addWidget(menu_act_ch_label)
@@ -784,7 +786,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             QSpacerItem(0, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
         vbox.addWidget(self.button_stop)
         vbox.addWidget(button_save_image)
-        vbox.addWidget(button_save_csv)
+        vbox.addWidget(self.button_save_csv)
         return vbox
 
     def create_slider_mag_layout(self):
@@ -1414,6 +1416,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             self.action_new.setEnabled(False)
             self.action_load.setEnabled(False)
             self.action_com_port.setEnabled(False)
+            self.button_save_csv.setEnabled(True)
 
             self.button_stop.setText('Stop')
             # XXX  self.button_stop.update() doesn't work
@@ -1468,6 +1471,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
         self.action_com_port.setEnabled(True)
         self.button_stop.setChecked(False)
         self.button_stop.setText('Run')
+        self.button_save_csv.setEnabled(False)
         self.oscillo_app.disconnect_target()
         self.stop_animation()
 
