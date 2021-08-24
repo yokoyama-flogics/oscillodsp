@@ -1,6 +1,6 @@
 # OscilloDSP, a Virtual Oscilloscope Software for Jupyter and Embedded Processors
 
-Copyright (c) 2020, Chubu University and Firmlogics
+Copyright (c) 2020, 2021, Chubu University and Firmlogics
 
 All rights reserved.
 
