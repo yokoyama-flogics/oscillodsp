@@ -6,7 +6,7 @@ All rights reserved.
 
 [Demo video is available on YouTube.](https://www.youtube.com/watch?v=cJITVeQGVG0)
 
-[![YouTube video](https://img.youtube.com/vi/cJITVeQGVG0/0.jpg)](https://www.youtube.com/watch?v=cJITVeQGVG0)
+![PySide 2 app](image/pyside2_app.png)
 
 Currently, only Japanese document is available.
 Sorry for your inconvenience.
