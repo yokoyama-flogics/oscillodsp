@@ -8,6 +8,8 @@ All rights reserved.
 
 ![PySide 2 app](image/pyside2_app.png)
 
+![TI C6670 DSP EVM](image/ti_c6670_evm.jpg)
+
 ## What is OscilloDSP?
 
 OscilloDSP is a software tool that allows users to visualize data from embedded processors, such as DSPs (Digital Signal Processors), in a way similar to an oscilloscope. It sends sensor values, computed data, or other real-time information from the embedded processor to a PC, where Python-based visualizations are generated. This is especially useful for engineers and researchers working on embedded systems, who need to analyze data from sensors or signal processing units in real-time.
