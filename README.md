@@ -4,13 +4,23 @@ Copyright (c) 2020, 2021, Chubu University and Firmlogics
 
 All rights reserved.
 
-[Demo video is available on YouTube.](https://www.youtube.com/watch?v=cJITVeQGVG0)
+[Watch the demo video on YouTube.](https://www.youtube.com/watch?v=cJITVeQGVG0)
 
 ![PySide 2 app](image/pyside2_app.png)
 
-Currently, only Japanese document is available.
-Sorry for your inconvenience.
+## 日本語のドキュメント
 
 - [インストール方法](hostapp/installation.ipynb)
 - [使い方](hostapp/usage.ipynb)
 - [パソコン用のオシロスコープアプリ](hostapp/oscillo.ipynb)
+
+## Documentation in English
+
+- [Installation Guide](hostapp/installation_en.ipynb)
+- [How to Use](hostapp/usage_en.ipynb)
+- [Oscilloscope app for PC](hostapp/oscillo_en.ipynb)
+
+## License
+
+This project is licensed under the BSD 2-Clause License.
+See the [LICENSE](LICENSE) file for more details.
