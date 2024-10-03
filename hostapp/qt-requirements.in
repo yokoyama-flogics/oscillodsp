@@ -1,0 +1,4 @@
+-r common-requirements.in
+PySide6
+PyYAML
+appdirs

@@ -1,0 +1,6 @@
+matplotlib
+protobuf==5.27.2  # refer https://github.com/grpc/grpc/issues/37609
+nanopb
+grpcio-tools  # required to run nanopb (refer https://pypi.org/project/nanopb/)
+pyftdi
+pyserial

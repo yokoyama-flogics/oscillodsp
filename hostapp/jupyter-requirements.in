@@ -1,0 +1,3 @@
+-r common-requirements.in
+notebook
+ipympl  # required for "%matplotlib widget"
