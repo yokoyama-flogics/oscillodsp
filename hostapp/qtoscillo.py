@@ -28,15 +28,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from colorman import ColorManager
 from confman import ConfigManager
 from matplotlib.animation import FuncAnimation
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from oscillodsp import dsp
 from oscillodsp.oscillodsp_pb2 import TriggerMode, TriggerType
 from oscillodsp.utils import get_filename
-from PySide2 import QtWidgets, QtGui
-from PySide2.QtCore import Qt, QSize, Signal
-from PySide2.QtWidgets import (
-    QAction,
+from PySide6 import QtWidgets, QtGui
+from PySide6.QtCore import Qt, QSize, Signal
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
@@ -1012,7 +1012,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
         self.button_stop.setEnabled(False)
         self.update_window_title()
         result = ComPortDialog(
-            logger=self.logger, confman=self.confman).exec_()
+            logger=self.logger, confman=self.confman).exec()
         if result:
             self.button_stop.setEnabled(True)
 
@@ -1047,7 +1047,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
     def action_com_port_triggered(self):
         self.logger.debug("action_com_port: triggered")
         w = ComPortDialog(logger=self.logger, confman=self.confman)
-        result = w.exec_()
+        result = w.exec()
         self.logger.debug("action_com_port: result={:d}".format(result))
         if result:
             self.button_stop.setEnabled(True)
@@ -1058,7 +1058,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             logger=self.logger,
             colorman=self.colorman,
             cur_buttons=self.buttons_visibility)
-        w.exec_()
+        w.exec()
 
     def get_dsp_logger(self):
         """
@@ -1128,7 +1128,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             mbox.setStandardButtons(QMessageBox.Save | QMessageBox.Discard
                                     | QMessageBox.Cancel)
             mbox.setDefaultButton(QMessageBox.Save)
-            ret = mbox.exec_()
+            ret = mbox.exec()
 
             self.logger.debug("save before quit: {:d}".format(ret))
 
@@ -1438,6 +1438,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
                 self.canvas.figure,
                 self.update_plot,
                 blit=False,
+                cache_frame_data=False,
                 interval=MIN_UPDATE_INTERVAL)
             self.canvas.draw()  # In the blit=False case, this is required
 
@@ -1567,12 +1568,12 @@ class QtOscillo:
         else:
             self.widget.button_stop.setEnabled(False)
             result = ComPortDialog(
-                logger=self.logger, confman=self.confman).exec_()
+                logger=self.logger, confman=self.confman).exec()
             if result:
                 self.widget.button_stop.setEnabled(True)
 
         # Finally run the QApplication() and enter the GUI event handler loop
-        sys.exit(qt_app.exec_())
+        sys.exit(qt_app.exec())
 
     def connect_target(self, trigmode, trigtype, ch_trig, triglevel):
         """
