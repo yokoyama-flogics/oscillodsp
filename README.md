@@ -49,8 +49,8 @@ OscilloDSP reduces the communication load between an embedded processor and a PC
 
 | 日本語 | English |
 |--------|---------|
-| [インストール方法](hostapp/docs/installation.md) | [Installation Guide](hostapp/docs/installation_en.md) |
-| [使い方](hostapp/docs/usage.md) | [How to Use](hostapp/docs/usage_en.md) |
+| [インストール方法](docs/installation.md) | [Installation Guide](docs/installation_en.md) |
+| [使い方](docs/usage.md) | [How to Use](docs/usage_en.md) |
 | [パソコン用のオシロスコープアプリ](hostapp/oscillo.ipynb) | [Oscilloscope app for PC](hostapp/oscillo_en.ipynb) |
 
 ## Known Issues
