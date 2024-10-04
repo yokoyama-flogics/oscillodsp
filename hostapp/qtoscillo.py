@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 """
 Copyright (c) 2020-2021, Chubu University and Firmlogics
 
@@ -29,11 +31,14 @@ import logging
 import math
 import os
 import sys
+import threading
+import time
 
 import numpy as np
 from matplotlib.animation import FuncAnimation
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
+from matplotlib.ticker import EngFormatter
 from PySide6 import QtGui, QtWidgets
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QAction
@@ -57,8 +62,11 @@ from PySide6.QtWidgets import (
 from colorman import ColorManager
 from confman import ConfigManager
 from oscillodsp import dsp
-from oscillodsp.oscillodsp_pb2 import TriggerMode, TriggerType
-from oscillodsp.utils import get_filename
+from oscillodsp.oscillodsp_pb2 import (  # pylint: disable=no-name-in-module
+    TriggerMode,
+    TriggerType,
+)
+from oscillodsp.utils import Blinker, get_filename, modified_ylim, run_pcsim
 
 # Various definitions
 WIN_STYLE = "Fusion"
@@ -76,6 +84,7 @@ VISIB_BUTTON_HEIGHT = 20
 VISIB_BUTTON_HEIGHT_MARGIN = 6  # XXX  more sophisticated way?
 LOGGING_DISABLE = logging.CRITICAL + 1
 MIN_UPDATE_INTERVAL = 30  # milliseconds
+DEBUG_PCSIM = False
 
 
 def find_in_listdict(listdict, search_key, val, return_key):
@@ -91,16 +100,16 @@ def find_in_listdict(listdict, search_key, val, return_key):
             if _[search_key] == val:
                 if return_key in _:
                     return _[return_key]
-                else:
-                    raise ValueError("return_key doesn't exist")
-    else:
-        if search_key_exists:
-            return None
-        else:
-            raise ValueError("search_key doesn't exist")
+                raise ValueError("return_key doesn't exist")
+    if search_key_exists:
+        return None
+    raise ValueError("search_key doesn't exist")
 
 
 def trig_status_txt(s):
+    """
+    Generates an HTML-formatted trigger status string.
+    """
     return "<b>Trigger Status</b>: " + s
 
 
@@ -117,8 +126,12 @@ def com_ports():
     Make a list contains serial ports and FTDI URLs, and return it.
     In the POSIX case, also add 'pcsim'.
     """
-    from pyftdi.ftdi import Ftdi
-    from serial.tools import list_ports
+    # The reason for importing here is that it may be required for PyInstaller.
+    # This needs to be re-checked.
+    from pyftdi.ftdi import Ftdi  # pylint: disable=import-outside-toplevel
+    from serial.tools import (  # pylint: disable=import-outside-toplevel
+        list_ports,
+    )
 
     # Add custom USB product IDs to Ftdi
     for pid in FTDI_PRODUCT_IDS:
@@ -137,7 +150,7 @@ def com_ports():
     try:
         for d, num_interfaces in Ftdi.list_devices():
             for i in range(num_interfaces):
-                url = "ftdi://ftdi:0x{:x}:{}/{:d}".format(d.pid, d.sn, i + 1)
+                url = f"ftdi://ftdi:0x{d.pid:x}:{d.sn}/{i + 1:d}"
                 desc = d.description
                 items.append({"name": url, "desc": desc})
     except ValueError as err:
@@ -168,7 +181,7 @@ def create_visibility_button(channel, label=None, colorman=None):
     btn.setFixedWidth(50)
     btn.setFixedHeight(VISIB_BUTTON_HEIGHT)
     btn.setStyleSheet(
-        "color: white; background-color: {}".format(colorman.color(channel))
+        f"color: white; background-color: {colorman.color(channel)}"
     )
     return btn
 
@@ -220,9 +233,6 @@ class SuppressFractionSpinBox(QtWidgets.QDoubleSpinBox):
     natural floating value string in the text frame
     """
 
-    def __init__(self):
-        super().__init__()
-
     def textFromValue(self, val):
         return str(val)
 
@@ -234,7 +244,9 @@ class ComPortDialog(QtWidgets.QDialog):
 
     DEFAULT_BAUDRATE = 9600
 
-    def __init__(self, parent=None, logger=None, confman=None):
+    def __init__(  # pylint: disable=too-many-locals,too-many-statements
+        self, parent=None, logger=None, confman=None
+    ):
         super().__init__(parent)
 
         self.logger = logger
@@ -265,21 +277,18 @@ class ComPortDialog(QtWidgets.QDialog):
                 m.addItem("PC Simulator (pcsim)", "pcsim")
             elif port["desc"]:
                 m.addItem(
-                    "{} ({})".format(
-                        port["name"],
-                        port["desc"],
-                    ),
+                    f'{port["name"]} ({port["desc"]})',
                     port["name"],
                 )
             else:
-                m.addItem("{}".format(port["name"]), port["name"])
+                m.addItem(f"{port['name']}", port["name"])
             idx += 1
 
         # Pre-select COM port, specified in the settings, in the combo box
         comport = self.confman.get("comport")
         if comport:
             index = m.findData(comport)
-            self.logger.debug("comport: index={:d}".format(index))
+            self.logger.debug(f"comport: index={index:d}")
             if index >= 0:
                 m.setCurrentIndex(index)
 
@@ -325,19 +334,21 @@ class ComPortDialog(QtWidgets.QDialog):
         self.setLayout(vbox)
 
     def menu_changed(self, index):
+        _ = index  # Index is required by Qt, even if unused
+
         if self.menu_comport.currentData() == "pcsim":
             self.edit_baudrate.setEnabled(False)
         else:
             self.edit_baudrate.setEnabled(True)
 
     def button_ok_clicked(self):
-        import serial
+        # The reason for importing here is that it may be required for
+        # PyInstaller. This needs to be re-checked.
+        import serial  # pylint: disable=import-outside-toplevel
 
         com_port = self.menu_comport.currentData()
         baudrate = int(self.edit_baudrate.text())
-        self.logger.debug(
-            "button_ok_clicked: {} {:d}".format(com_port, baudrate)
-        )
+        self.logger.debug(f"button_ok_clicked: {com_port} {baudrate:d}")
 
         # Test if the com_port can accept the baudrate
         try:
@@ -350,9 +361,7 @@ class ComPortDialog(QtWidgets.QDialog):
             QMessageBox.critical(
                 self,
                 "Error",
-                "The baudrate {:d} isn't available on the interface".format(
-                    baudrate
-                ),
+                f"The baudrate {baudrate:d} isn't available on the interface",
             )
 
 
@@ -392,24 +401,24 @@ class ChannelColorsDialog(QtWidgets.QDialog):
         self.setLayout(vbox)
 
     def buttons_ch_changed(self):
-        STYLE_TXT = "color: white; background-color: {}"
-
         btn = self.sender()
-        id = int(btn.text())
-        self.logger.debug("buttons_ch: changed ({:d})".format(id))
+        id_ = int(btn.text())
+        self.logger.debug(f"buttons_ch: changed ({id_:d})")
 
-        color = QtWidgets.QColorDialog.getColor(self.colorman.color(id))
-        self.logger.debug("returned color: {}".format(str(color.name())))
+        color = QtWidgets.QColorDialog.getColor(self.colorman.color(id_))
+        self.logger.debug(f"returned color: {color.name()}")
         if not color.isValid():
             self.logger.debug("returned color: not isValid()")
             return
 
-        self.colorman.set_color(id, color.name())
+        self.colorman.set_color(id_, color.name())
 
-        btn.setStyleSheet(STYLE_TXT.format(color.name()))
+        style_txt = f"color: white; background-color: {color.name()}"
 
-        if self.cur_buttons and id < len(self.cur_buttons):
-            self.cur_buttons[id].setStyleSheet(STYLE_TXT.format(color.name()))
+        btn.setStyleSheet(style_txt)
+
+        if self.cur_buttons and id_ < len(self.cur_buttons):
+            self.cur_buttons[id_].setStyleSheet(style_txt)
 
 
 class LogTextView(QtWidgets.QPlainTextEdit):
@@ -422,22 +431,22 @@ class LogTextView(QtWidgets.QPlainTextEdit):
         self.__width = super().width()
         self.__height = super().height()
 
-    def setSizeHint(self, width, height):
+    def set_size_hint(self, width, height):
         if width:
             self.__width = width
         if height:
             self.__height = height
 
-    def sizeHint(self):
+    def size_hint(self):
         return QSize(self.__width, self.__height)
 
 
-class LogViewerDialog(QtWidgets.QDialog):
+class LogViewerDialog(  # pylint: disable=too-many-instance-attributes
+    QtWidgets.QDialog
+):
     """
     Log viewer and control which levels of messages should be shown
     """
-
-    import logging
 
     signal = Signal()
 
@@ -450,7 +459,10 @@ class LogViewerDialog(QtWidgets.QDialog):
         (logging.DEBUG, "Debug"),
     ]
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,
+        # pylint: disable=too-many-positional-arguments,
+        # pylint: disable=too-many-locals,
+        # pylint: disable=too-many-statements
         self,
         parent=None,
         app_logger=None,
@@ -461,8 +473,6 @@ class LogViewerDialog(QtWidgets.QDialog):
         action_view_log=None,
         confman=None,
     ):
-        import threading
-
         super().__init__(parent)
 
         self.app_logger = app_logger
@@ -471,8 +481,13 @@ class LogViewerDialog(QtWidgets.QDialog):
         self.set_loglevels = set_loglevels
         self.action_view_log = action_view_log
         self.confman = confman
+        self.running = False
 
-        self.fd = open(log_filename)
+        # Open the file and make sure to close it in __delete() to manage
+        # resources manually
+        self.fd = open(  # pylint: disable=consider-using-with
+            log_filename, encoding="utf-8"
+        )
         self.signal.connect(self.update)
         self.str_pushback = ""
         self.autoscroll = True
@@ -494,8 +509,8 @@ class LogViewerDialog(QtWidgets.QDialog):
         """
         total_width = text_width + m.left() + m.right()
         total_width += (d.documentMargin() + self.viewer.frameWidth()) * 2
-        total_width += self.viewer.verticalScrollBar().sizeHint().width()
-        self.viewer.setSizeHint(total_width, None)
+        total_width += self.viewer.verticalScrollBar().size_hint().width()
+        self.viewer.set_size_hint(total_width, None)
 
         boxes_loglevel = []
         for idx, _ in enumerate(loglevels):
@@ -512,7 +527,7 @@ class LogViewerDialog(QtWidgets.QDialog):
             m.currentIndexChanged.connect(self.menu_changed)
 
             vbox = QVBoxLayout()
-            vbox.addWidget(QLabel("<b>{} Log Level</b>".format(_["desc"])))
+            vbox.addWidget(QLabel(f"<b>{_['desc']} Log Level</b>"))
             vbox.addWidget(m)
             boxes_loglevel.append(vbox)
 
@@ -552,11 +567,12 @@ class LogViewerDialog(QtWidgets.QDialog):
             self.autoscroll = False
 
     def menu_changed(self, index):
+        _ = index  # Index is required by Qt, even if unused
+
         log_from, loglevel = self.sender().currentData()
         self.app_logger.debug(
-            "LogViewerDialog.menu_changed: from={} loglevel={}".format(
-                log_from, loglevel
-            )
+            "LogViewerDialog.menu_changed: "
+            f"from={log_from} loglevel={loglevel}"
         )
 
         from_ = self.loglevels[log_from]["from"]
@@ -583,8 +599,6 @@ class LogViewerDialog(QtWidgets.QDialog):
                 sb = sb.setValue(sb.maximum())
 
     def run(self):
-        import time
-
         self.running = True
 
         self.signal.emit()
@@ -607,8 +621,15 @@ class LogViewerDialog(QtWidgets.QDialog):
         if self.action_view_log:
             self.action_view_log.setEnabled(True)
 
+        # Close the file to free resources
+        if self.fd:
+            self.fd.close()
 
-class OscilloWidget(QtWidgets.QMainWindow):
+
+class OscilloWidget(  # pylint: disable=too-many-instance-attributes,
+    # pylint: disable=too-many-public-methods
+    QtWidgets.QMainWindow
+):
     """
     Oscilloscope main window
     """
@@ -619,8 +640,46 @@ class OscilloWidget(QtWidgets.QMainWindow):
         {"from": "dsp", "level": LOGGING_DISABLE, "desc": "DSP Driver"},
     ]
 
-    def __init__(self, oscillo_app, logger, confman, appname, log_filename):
+    def __init__(  # pylint: disable=too-many-arguments,
+        # pylint: disable=too-many-positional-arguments,
+        # pylint: disable=too-many-statements
+        self,
+        oscillo_app,
+        logger,
+        confman,
+        appname,
+        log_filename,
+    ):
         super().__init__()
+
+        # Defining attributes here to avoid pylint warnings (W0201: Attribute
+        # defined outside __init__).
+        # These attributes are initialized elsewhere in the code, but pylint
+        # expects them to be defined in __init__.
+        self.ani = None
+        self.blinker = None
+        self.ch_active = None
+        self.ch_trig = None
+        self.ch_trig_new = None
+        self.clear_trig = None
+        self.last_reply = None
+        self.last_ylim = None
+        self.lines = None
+        self.mag10 = None
+        self.max_timescale = None
+        self.old_status = None
+        self.req_save_csv_filename = None
+        self.triggered = None
+        self.triglevel = None
+        self.triglevel_new = None
+        self.trigmode = None
+        self.trigmode_new = None
+        self.trigtype = None
+        self.trigtype_new = None
+        self.tscale = None
+        self.tscale_new = None
+        self.waves = None
+        self.ypos10 = None
 
         self.oscillo_app = oscillo_app
         self.logger = logger
@@ -713,7 +772,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             QApplication.setStyle(QStyleFactory.create(WIN_STYLE))
             QApplication.setPalette(QApplication.style().standardPalette())
 
-    def create_controller_layout(self):
+    def create_controller_layout(self):  # pylint: disable=too-many-statements
         """
         Create controller panel layout which contains carious buttons and menus
         and return the layout to the caller
@@ -889,7 +948,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
         # File Menu
         menu_file = self.menubar.addMenu("&File")
 
-        action_quit = QAction("&Quit {}".format(self.appname), self)
+        action_quit = QAction(f"&Quit {self.appname}", self)
         action_quit.setShortcut("Ctrl+Q")
         action_quit.triggered.connect(self.quit)
         menu_file.addAction(action_quit)
@@ -960,34 +1019,32 @@ class OscilloWidget(QtWidgets.QMainWindow):
 
     def update_window_title(self):
         filename = self.confman.get_config_filename()
-        self.logger.debug(
-            "update_window_title(): filename={}".format(filename)
-        )
+        self.logger.debug(f"update_window_title(): filename={filename}")
         if filename is None:
             filename = "Untitled"
         else:
             filename = os.path.basename(filename)
             filename = os.path.splitext(filename)[0]
-        title = "{} | {}".format(filename, self.appname)
-        self.logger.debug("update_window_title(): title={}".format(title))
+        title = f"{filename} | {self.appname}"
+        self.logger.debug(f"update_window_title(): title={title}")
         self.setWindowTitle(title)
 
     def menu_act_ch_changed(self, index):
-        self.logger.debug("menu_act_ch_changed: {:d}".format(index))
+        self.logger.debug(f"menu_act_ch_changed: {index:d}")
         self.ch_active = index
         self.slider_mag.setValue(self.mag10[self.ch_active])
         self.slider_ypos.setValue(self.ypos10[self.ch_active])
 
     def menu_trig_ch_changed(self, index):
-        self.logger.debug("menu_trig_ch_changed: {:d}".format(index))
+        self.logger.debug(f"menu_trig_ch_changed: {index:d}")
         self.ch_trig_new = index
 
     def menu_trigtype_changed(self, index):
-        self.logger.debug("menu_trigtype_changed: {:d}".format(index))
+        self.logger.debug(f"menu_trigtype_changed: {index:d}")
         self.trigtype_new = index
 
     def menu_trigmode_changed(self, index):
-        self.logger.debug("menu_trigmode_changed: {:d}".format(index))
+        self.logger.debug(f"menu_trigmode_changed: {index:d}")
         self.trigmode_new = index
 
     def slider_tscale_changed(self, value):
@@ -995,7 +1052,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             self.tscale_new = slider_tscale_to_actual_tscale(
                 value, self.max_timescale
             )
-            self.logger.debug("tscale_changed: {:e}".format(self.tscale_new))
+            self.logger.debug(f"tscale_changed: {self.tscale_new:e}")
 
     def button_single_clicked(self):
         self.logger.debug("button_single: clicked")
@@ -1080,7 +1137,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
         self.logger.debug("action_com_port: triggered")
         w = ComPortDialog(logger=self.logger, confman=self.confman)
         result = w.exec()
-        self.logger.debug("action_com_port: result={:d}".format(result))
+        self.logger.debug(f"action_com_port: result={result:d}")
         if result:
             self.button_stop.setEnabled(True)
 
@@ -1125,12 +1182,12 @@ class OscilloWidget(QtWidgets.QMainWindow):
         visibility buttons
         """
         b = self.sender()
-        id = int(b.text())
-        self.logger.debug("buttons_visibility: changed ({:d})".format(id))
+        id_ = int(b.text())
+        self.logger.debug(f"buttons_visibility: changed ({id_:d})")
         if b.isChecked():
-            self.view_enabled_ch[id] = False
+            self.view_enabled_ch[id_] = False
         else:
-            self.view_enabled_ch[id] = True
+            self.view_enabled_ch[id_] = True
 
     def closeEvent(self, event):
         if self.cleanup_before_closing():
@@ -1165,7 +1222,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             mbox.setDefaultButton(QMessageBox.Save)
             ret = mbox.exec()
 
-            self.logger.debug("save before quit: {:d}".format(ret))
+            self.logger.debug(f"save before quit: {ret:d}")
 
             if ret == QMessageBox.Save:
                 filename = self.confman.get_config_filename()
@@ -1185,17 +1242,13 @@ class OscilloWidget(QtWidgets.QMainWindow):
 
         return True
 
-    def update_plot(self, i):
+    def update_plot(self, _):  # pylint: disable=too-many-locals,
+        # pylint: disable=too-many-branches,
+        # pylint: disable=too-many-statements
         """
         Main function to update the plot.  Should be called by Matplotlib
         FuncAnimation()
         """
-        import time
-
-        from matplotlib.ticker import EngFormatter
-
-        from oscillodsp.utils import modified_ylim
-
         app = self.oscillo_app
 
         # When requested by UI, clear triggered flag synchronously
@@ -1245,17 +1298,15 @@ class OscilloWidget(QtWidgets.QMainWindow):
                     self.triggered = self.waves.triggered
 
                 update_interval = (time.time() - start_get_wave) * 1000
-                if update_interval < MIN_UPDATE_INTERVAL:
-                    update_interval = MIN_UPDATE_INTERVAL
+                update_interval = max(update_interval, MIN_UPDATE_INTERVAL)
                 self.ani.event_source.interval = update_interval
 
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             if "Timeout" in str(err) or "timeout" in str(err):
                 show_msgbox_timeout(self)
                 self.stop()
                 return
-            else:
-                raise
+            raise
 
         # Determine if plotting is required
         need_plot = len(self.waves.wave) > 0
@@ -1293,10 +1344,12 @@ class OscilloWidget(QtWidgets.QMainWindow):
             # Generate CSV file header if required
             csv_samples = []
             if self.req_save_csv_filename:
-                csv_printer = open(self.req_save_csv_filename, "w")
+                csv_printer = open(  # pylint: disable=consider-using-with
+                    self.req_save_csv_filename, "w", encoding="utf-8"
+                )
                 csv_printer.write("time [sec]")
                 for ch in self.last_reply.chconfig:
-                    csv_printer.write(",{:s} [{:s}]".format(ch.name, ch.unit))
+                    csv_printer.write(f",{ch.name} [{ch.unit}]")
                 csv_printer.write("\n")
 
             # Now we can determine samples in a wave
@@ -1382,9 +1435,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
             # ylim is configured for currently active channel
             self.canvas.ax.yaxis.set_major_formatter(EngFormatter())
             self.canvas.ax.set_ylabel(
-                "{:s} [{:s}]".format(
-                    chconfig_active.name, chconfig_active.unit
-                )
+                f"{chconfig_active.name} [{chconfig_active.unit}]"
             )
 
             # Show legend here
@@ -1406,22 +1457,19 @@ class OscilloWidget(QtWidgets.QMainWindow):
             # Finally save sample data to CSV file
             if self.req_save_csv_filename:
                 for i in range(n_xsamples):
-                    csv_printer.write("{:e}".format(xser[i]))
+                    csv_printer.write(f"{i:e}")
                     for ch_id in range(len(self.last_reply.chconfig)):
-                        csv_printer.write(
-                            ",{:e}".format(csv_samples[ch_id][i])
-                        )
+                        csv_printer.write(f",{csv_samples[ch_id][i]:e}")
                     csv_printer.write("\n")
                 csv_printer.close()
                 self.req_save_csv_filename = None
+                csv_printer.close()
 
     def button_stop_changed(self):
         """
         When Run/Stop button is clicked, this function (event handler)
         should be called.
         """
-        from oscillodsp.utils import Blinker
-
         if self.button_stop.isChecked():
             # Initialize member variables
             self.blinker = Blinker()
@@ -1507,7 +1555,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
         self.logger.debug("stop_animation()")
         if self.running:
             self.logger.debug("stop_animation(): self.running is True")
-            self.ani._stop()
+            self.ani._stop()  # pylint: disable=protected-access
             self.running = False
 
     def stop(self):
@@ -1558,21 +1606,30 @@ class OscilloWidget(QtWidgets.QMainWindow):
             self.view_enabled_ch.append(True)
 
 
-class QtOscillo:
+class QtOscillo:  # pylint: disable=too-many-instance-attributes
+    """
+    QtOscillo application main class
+    """
+
     APPNAME = "QtOscillo"
     ORGNAME = "Firmlogics"
     DOMAINNAME = "flogics.com"
     REVERSE_DOMAINNAME = "com.flogics"
     PCSIM_BAUDRATE = 115200
-    """
-    QtOscillo application main class
-    """
 
     def __init__(self, quantize_bits=DEFAULT_SAMPLE_QUANTIZE_BITS):
         self.quantize_bits = quantize_bits
         self.confman = ConfigManager(
             appname=self.APPNAME, appauthor=self.REVERSE_DOMAINNAME
         )
+
+        # Defining attributes here to avoid pylint warnings (W0201: Attribute
+        # defined outside __init__).
+        # These attributes are initialized elsewhere in the code, but pylint
+        # expects them to be defined in __init__.
+        self.dsp_bitrate = None
+        self.dsp_tty = None
+        self.target = None
 
         log_filename = self.confman.get_appdir_path("log.txt")
 
@@ -1632,26 +1689,26 @@ class QtOscillo:
         # Finally run the QApplication() and enter the GUI event handler loop
         sys.exit(qt_app.exec())
 
-    def connect_target(self, trigmode, trigtype, ch_trig, triglevel):
+    def connect_target(  # pylint: disable=too-many-locals
+        self, trigmode, trigtype, ch_trig, triglevel
+    ):
         """
         Connect to the target processor (MCU, DSP, etc.)
         """
-        from oscillodsp.utils import run_pcsim
-
         comport = self.confman.get("comport")
         if comport == "pcsim":
-            DEBUG_PCSIM = False
             if DEBUG_PCSIM:
                 # In the DEBUG case, manually run 'pcsim' by hand, and read
                 # the file ptyname.txt
-                self.dsp_tty = open("../pcsim/ptyname.txt").read()
+                with open("../pcsim/ptyname.txt", encoding="ascii") as f:
+                    self.dsp_tty = f.read()
             else:
                 self.dsp_tty = run_pcsim("../pcsim/pcsim")
 
             self.dsp_bitrate = self.PCSIM_BAUDRATE
         else:
             self.dsp_tty = comport
-            self.logger.debug("dsp_tty: {}".format(self.dsp_tty))
+            self.logger.debug("dsp_tty: %s", self.dsp_tty)
             self.dsp_bitrate = self.confman.get("baudrate")
 
         self.target = dsp.DSP(
@@ -1675,13 +1732,12 @@ class QtOscillo:
                 triglevel=triglevel,
                 timescale=0.0,
             )  # timescale as '0.0' means "Don't update timescale"
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-exception-caught
             if "Timeout" in str(err) or "timeout" in str(err):
                 show_msgbox_timeout(self.widget)
                 del self.target
                 return None
-            else:
-                raise
+            raise
 
         # Set-up mag10 and ypos10
         mag10 = []  # mag10 holds 10 times the actual magnification value
@@ -1700,7 +1756,7 @@ class QtOscillo:
         # dictionary
         ch_items = []
         for idx, ch in enumerate(config_reply.chconfig):
-            ch_items.append(("{:d}: {:s}".format(idx, ch.name), idx))
+            ch_items.append((f"{idx:d}: {ch.name}", idx))
 
         return {
             "mag10": mag10,
@@ -1714,8 +1770,6 @@ class QtOscillo:
         """
         Disconnect from the target processor (MCU, DSP, etc.)
         """
-        import os
-
         del self.target
         if self.confman.get("comport") == "pcsim":
             os.system("killall pcsim")

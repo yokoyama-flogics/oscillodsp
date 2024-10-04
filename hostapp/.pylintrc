@@ -1,0 +1,6 @@
+[MASTER]
+extension-pkg-allow-list=PySide6
+disable=fixme
+
+[MESSAGES CONTROL]
+disable=missing-function-docstring
