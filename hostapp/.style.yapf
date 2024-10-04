@@ -1,4 +1,0 @@
-[style]
-based_on_style = pep8
-split_before_expression_after_opening_paren = true
-split_before_dot = true
