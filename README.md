@@ -1,6 +1,6 @@
 # OscilloDSP, a Virtual Oscilloscope Software for Jupyter and Embedded Processors
 
-Copyright (c) 2020, 2021, Chubu University and Firmlogics
+Copyright (c) 2020-2024, Chubu University and Firmlogics
 
 All rights reserved.
 
@@ -57,7 +57,7 @@ OscilloDSP reduces the communication load between an embedded processor and a PC
 
 - When using pyenv, you may not be able to run `nanopb_generator` after installing with `pip-sync` unless you run `pyenv rehash`.
 
-- The section on “Disabling Jupyter cell auto-scrolling” in Jupyter notebooks appears to no longer be functional with recent Jupyter versions.
+- The section on “Stop Auto-scrolling in Jupyter Cells” in Jupyter notebooks appears to no longer be functional with recent Jupyter versions.
 
 - In Jupyter, the control panel and the Matplotlib plot screen do not align horizontally as they used to. The issue may be traceable by investigating version differences, but due to the complexity of designing a detailed GUI with IPyWidgets, I am considering dropping support for Jupyter with OscilloDSP.
 
