@@ -21,8 +21,11 @@ $(PROTOBUF_PY): $(wildcard ../protobuf/oscillodsp.*)
 run: $(PROTOBUF_PY)
 	python ${APPSRC}
 
+format:
+	isort $(ALLSRCS)
+	black $(ALLSRCS)
+
 lint:
-	yapf -d $(ALLSRCS)
 	flake8 $(FLAKE8SRCS)
 	flake8 --ignore=F403,F405 $(PYTESTSRCS)
 	vulture $(SRCS) $(WHITELIST)

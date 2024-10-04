@@ -25,36 +25,38 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from oscillodsp import dsp
-from oscillodsp.utils import get_filename, modified_ylim, Blinker
-from oscillodsp.oscillodsp_pb2 import TriggerMode, TriggerType
-from ipywidgets import Layout
-from matplotlib.ticker import EngFormatter
-import ipywidgets as widgets
-import matplotlib.pyplot as plt
-import numpy as np
 import asyncio
 import logging
 import math
 import sys
 
+import ipywidgets as widgets
+import matplotlib.pyplot as plt
+import numpy as np
+from ipywidgets import Layout
+from matplotlib.ticker import EngFormatter
+
+from oscillodsp import dsp
+from oscillodsp.oscillodsp_pb2 import TriggerMode, TriggerType
+from oscillodsp.utils import Blinker, get_filename, modified_ylim
+
 # Various definitions
 DEFAULT_SAMPLE_QUANTIZE_BITS = 16
-BLINK_LIST = ['Waiting', 'Auto']
+BLINK_LIST = ["Waiting", "Auto"]
 DEFAULT_CH_COLOR = [
-    'gold',
-    'dodgerblue',
-    'darkred',
-    'darkblue',
-    'black',
-    'black',
-    'black',
-    'black',
+    "gold",
+    "dodgerblue",
+    "darkred",
+    "darkblue",
+    "black",
+    "black",
+    "black",
+    "black",
 ]
 
 # Define layouts
-H_LAYOUT = Layout(width='150px')
-V_LAYOUT = Layout(width='30px', height='4.1in')
+H_LAYOUT = Layout(width="150px")
+V_LAYOUT = Layout(width="30px", height="4.1in")
 
 
 def show_module_versions(modules):
@@ -62,6 +64,7 @@ def show_module_versions(modules):
     Show Python and module versions
     """
     import importlib
+
     print("Python version:", sys.version)
 
     for m in modules:
@@ -76,6 +79,7 @@ def observe(widget, trait_name):
 
     Refer https://github.com/jupyter-widgets/ipywidgets/issues/717
     """
+
     def wrapper(func):
         widget.observe(func, trait_name)
 
@@ -86,14 +90,17 @@ class Oscillo(widgets.HBox):
     """
     Main Oscillo class definition
     """
-    def __init__(self,
-                 dsp_tty,
-                 dsp_bitrate,
-                 quantize_bits=DEFAULT_SAMPLE_QUANTIZE_BITS,
-                 loglevel=logging.WARNING,
-                 loghandler=logging.StreamHandler(sys.__stdout__),
-                 logformatter=logging.Formatter('oscillo.py: %(message)s'),
-                 dsp_loglevel=logging.WARNING):
+
+    def __init__(
+        self,
+        dsp_tty,
+        dsp_bitrate,
+        quantize_bits=DEFAULT_SAMPLE_QUANTIZE_BITS,
+        loglevel=logging.WARNING,
+        loghandler=logging.StreamHandler(sys.__stdout__),
+        logformatter=logging.Formatter("oscillo.py: %(message)s"),
+        dsp_loglevel=logging.WARNING,
+    ):
 
         # Call widgets.HBox.__init__()
         # Refer https://kapernikov.com/ipywidgets-with-matplotlib/
@@ -110,10 +117,10 @@ class Oscillo(widgets.HBox):
 
         # Identify underling OS (Linux, Windows, etc.) and determine asyncio
         # sleep length
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             self.sleep_len = 0.1
             self.logger.info(
-                'Detected running on Windows, so using a special sleep length.'
+                "Detected running on Windows, so using a special sleep length."
             )
         else:
             self.sleep_len = 0.01
@@ -125,10 +132,11 @@ class Oscillo(widgets.HBox):
         output = widgets.Output()
         with output:
             self.fig, self.ax = plt.subplots(
-                constrained_layout=True, figsize=(7, 4))
+                constrained_layout=True, figsize=(7, 4)
+            )
 
         # Move the toolbar to the bottom
-        self.fig.canvas.toolbar_position = 'bottom'
+        self.fig.canvas.toolbar_position = "bottom"
 
         # Initialize other object variables which are related to plotting
         self.ch_active = 0  # channel currently paying attention by user
@@ -142,43 +150,50 @@ class Oscillo(widgets.HBox):
         self.menu_ch = widgets.Dropdown(options=[], layout=H_LAYOUT)
         self.menu_trig = widgets.Dropdown(
             options=[
-                ('Auto', TriggerMode.Auto),
-                ('Normal', TriggerMode.Normal),
-                ('Single', TriggerMode.Single),
+                ("Auto", TriggerMode.Auto),
+                ("Normal", TriggerMode.Normal),
+                ("Single", TriggerMode.Single),
             ],
             value=TriggerMode.Auto,
-            layout=H_LAYOUT)
-        self.button_single = widgets.Button(description='Reset', disabled=True)
-        self.text_trig_status = widgets.HTML('<b>Trigger Status</b>: Waiting')
+            layout=H_LAYOUT,
+        )
+        self.button_single = widgets.Button(description="Reset", disabled=True)
+        self.text_trig_status = widgets.HTML("<b>Trigger Status</b>: Waiting")
         self.ftext_triglevel = widgets.FloatText(
-            value=0.0, step=0.5, description='', layout=H_LAYOUT)
+            value=0.0, step=0.5, description="", layout=H_LAYOUT
+        )
         self.button_stop = widgets.Button(
-            description='Ready', button_style='primary')
+            description="Ready", button_style="primary"
+        )
         self.button_save_image = widgets.Button(
-            description='Save as Image File')
-        self.button_save_csv = widgets.Button(description='Save as CSV File')
+            description="Save as Image File"
+        )
+        self.button_save_csv = widgets.Button(description="Save as CSV File")
         self.slider_mag = widgets.FloatSlider(
             value=1.0,
             min=0.1,
             max=1.91,
             step=0.1,
-            orientation='vertical',
-            layout=V_LAYOUT)
+            orientation="vertical",
+            layout=V_LAYOUT,
+        )
         self.slider_ypos = widgets.FloatSlider(
             value=0.0,
             min=-1.0,
             max=1.0,
-            orientation='vertical',
-            layout=V_LAYOUT)
+            orientation="vertical",
+            layout=V_LAYOUT,
+        )
         self.slider_tscale = widgets.FloatLogSlider(
             value=1 / 1e-3,  # reciprocal of time-scale
             base=10,
             min=0,
             max=9,
             step=1 / 3,
-            orientation='horizontal',
+            orientation="horizontal",
             readout=False,
-            layout=H_LAYOUT)
+            layout=H_LAYOUT,
+        )
 
         # Set Trigger Mode according to the menu selection
         self.trigmode_new = self.menu_trig.value  # for synchronous update
@@ -188,13 +203,13 @@ class Oscillo(widgets.HBox):
         #
         # Define callback functions respond GUI operations
         #
-        @observe(self.menu_ch, 'value')
+        @observe(self.menu_ch, "value")
         def _(change):
             self.ch_active = change.new
             self.slider_mag.value = self.mag[self.ch_active]
             self.slider_ypos.value = self.ypos[self.ch_active]
 
-        @observe(self.menu_trig, 'value')
+        @observe(self.menu_trig, "value")
         def _(change):
             self.trigmode_new = change.new
 
@@ -202,7 +217,7 @@ class Oscillo(widgets.HBox):
         def _(b):
             self.clear_trig = True
 
-        @observe(self.ftext_triglevel, 'value')
+        @observe(self.ftext_triglevel, "value")
         def _(change):
             self.triglevel_new = change.new
 
@@ -214,7 +229,7 @@ class Oscillo(widgets.HBox):
                 self.start()
             else:
                 self.stopped = True
-                self.button_stop.button_style = 'danger'
+                self.button_stop.button_style = "danger"
 
         @self.button_save_image.on_click
         def _(b):
@@ -225,15 +240,15 @@ class Oscillo(widgets.HBox):
         def _(b):
             self.req_save_csv = True
 
-        @observe(self.slider_mag, 'value')
+        @observe(self.slider_mag, "value")
         def _(change):
             self.mag[self.ch_active] = change.new
 
-        @observe(self.slider_ypos, 'value')
+        @observe(self.slider_ypos, "value")
         def _(change):
             self.ypos[self.ch_active] = change.new
 
-        @observe(self.slider_tscale, 'value')
+        @observe(self.slider_tscale, "value")
         def _(change):
             self.tscale_new = 1 / change.new
 
@@ -244,7 +259,8 @@ class Oscillo(widgets.HBox):
             trigtype=self.trigtype,
             ch_trig=0,
             triglevel=self.triglevel,
-            timescale=0.0)  # timescale as '0.0' means "Don't update timescale"
+            timescale=0.0,
+        )  # timescale as '0.0' means "Don't update timescale"
 
         # Set-up mag and ypos
         self.mag = []
@@ -252,7 +268,7 @@ class Oscillo(widgets.HBox):
         for ch in config_reply.chconfig:
             self.mag.append(1.0)
             center = (ch.min + ch.max) / 2
-            width = (ch.max - ch.min)
+            width = ch.max - ch.min
             self.ypos.append(-2.0 * center / width)
 
         # Create sub_ax (multiple ax on one subplot) of required numbers
@@ -273,35 +289,45 @@ class Oscillo(widgets.HBox):
         self.slider_tscale.min = math.log10(1 / config_reply.max_timescale)
 
         # Finally assemble all widgets in one box
-        self.controls = widgets.HBox([
-            widgets.VBox([
-                widgets.VBox([
-                    widgets.Box(layout=Layout(height='10px')),
-                    widgets.HTML('Scale&nbsp;&nbsp;Pos'),
-                ],
-                             layout=Layout(height='40px')),
-                widgets.HBox([
-                    self.slider_mag,
-                    self.slider_ypos,
-                ])
-            ]),
-            widgets.VBox([
-                widgets.HTML('<b>Active Channel</b>'),
-                self.menu_ch,
-                widgets.HTML('<b>Trigger Mode</b>'),
-                self.menu_trig,
-                self.button_single,
-                self.text_trig_status,
-                widgets.HTML('<b>Trigger Level</b>'),
-                self.ftext_triglevel,
-                widgets.HTML('<b>Horizontal Scale</b>'),
-                self.slider_tscale,
-                widgets.HTML('<hr>'),
-                self.button_stop,
-                self.button_save_image,
-                self.button_save_csv,
-            ]),
-        ])
+        self.controls = widgets.HBox(
+            [
+                widgets.VBox(
+                    [
+                        widgets.VBox(
+                            [
+                                widgets.Box(layout=Layout(height="10px")),
+                                widgets.HTML("Scale&nbsp;&nbsp;Pos"),
+                            ],
+                            layout=Layout(height="40px"),
+                        ),
+                        widgets.HBox(
+                            [
+                                self.slider_mag,
+                                self.slider_ypos,
+                            ]
+                        ),
+                    ]
+                ),
+                widgets.VBox(
+                    [
+                        widgets.HTML("<b>Active Channel</b>"),
+                        self.menu_ch,
+                        widgets.HTML("<b>Trigger Mode</b>"),
+                        self.menu_trig,
+                        self.button_single,
+                        self.text_trig_status,
+                        widgets.HTML("<b>Trigger Level</b>"),
+                        self.ftext_triglevel,
+                        widgets.HTML("<b>Horizontal Scale</b>"),
+                        self.slider_tscale,
+                        widgets.HTML("<hr>"),
+                        self.button_stop,
+                        self.button_save_image,
+                        self.button_save_csv,
+                    ]
+                ),
+            ]
+        )
         self.children = [output, self.controls]
 
     # To allow GUI operations while repeating plot updates, we need to run
@@ -313,11 +339,11 @@ class Oscillo(widgets.HBox):
         self.stopped = False
         self.clear_trig = False
         self.req_save_csv = False
-        self.button_stop.description = 'Run/Stop'
-        self.button_stop.button_style = 'success'
+        self.button_stop.description = "Run/Stop"
+        self.button_stop.button_style = "success"
 
         blinker = Blinker()
-        old_status = ''
+        old_status = ""
         triggered = False
         last_ylim = None
         formatter = EngFormatter()
@@ -329,22 +355,26 @@ class Oscillo(widgets.HBox):
                 self.clear_trig = False  # Reset the request
 
             # When requested by UI, clear triggered flag synchronously
-            if self.trigmode_new != self.trigmode or \
-                    self.tscale_new != self.tscale or \
-                    self.triglevel_new != self.triglevel:
+            if (
+                self.trigmode_new != self.trigmode
+                or self.tscale_new != self.tscale
+                or self.triglevel_new != self.triglevel
+            ):
                 self.trigmode = self.trigmode_new
                 self.tscale = self.tscale_new
                 self.triglevel = self.triglevel_new
                 triggered = False
                 self.button_single.disabled = (
-                    self.trigmode != TriggerMode.Single)
+                    self.trigmode != TriggerMode.Single
+                )
                 config_reply = self.peer.config(
                     resolution=self.quantize_bits,
                     trigmode=self.trigmode,
                     trigtype=self.trigtype,
                     ch_trig=0,
                     triglevel=self.triglevel,
-                    timescale=self.tscale)
+                    timescale=self.tscale,
+                )
                 self.last_reply = config_reply
 
             # Once triggered for single-shot mode, re-use wave data
@@ -360,30 +390,31 @@ class Oscillo(widgets.HBox):
             # Update trigger status message
             if self.trigmode == TriggerMode.Auto:
                 if triggered:
-                    new_status = 'Triggered'
+                    new_status = "Triggered"
                 else:
-                    new_status = 'Auto'
+                    new_status = "Auto"
             elif self.trigmode == TriggerMode.Normal:
                 if need_plot:
-                    new_status = 'Triggered'
+                    new_status = "Triggered"
                 else:
-                    new_status = 'Waiting'
+                    new_status = "Waiting"
             else:
                 if triggered:
-                    new_status = 'Stopped'
+                    new_status = "Stopped"
                 else:
-                    new_status = 'Waiting'
+                    new_status = "Waiting"
                     blank_screen = True
 
             # Blinking trigger status message
             if new_status != old_status:
                 blinker.reset()
             if new_status in BLINK_LIST and not blinker.active():
-                msg_status = ''
+                msg_status = ""
             else:
                 msg_status = new_status
-            self.text_trig_status.value = \
-                '<b>Trigger Status</b>: ' + msg_status
+            self.text_trig_status.value = (
+                "<b>Trigger Status</b>: " + msg_status
+            )
             old_status = new_status
 
             if need_plot:
@@ -391,11 +422,12 @@ class Oscillo(widgets.HBox):
                 csv_samples = []
                 if self.req_save_csv:
                     csv_printer = open(get_filename(".csv"), "w")
-                    csv_printer.write('time [sec]')
+                    csv_printer.write("time [sec]")
                     for ch in self.last_reply.chconfig:
-                        csv_printer.write(',{:s} [{:s}]'.format(
-                            ch.name, ch.unit))
-                    csv_printer.write('\n')
+                        csv_printer.write(
+                            ",{:s} [{:s}]".format(ch.name, ch.unit)
+                        )
+                    csv_printer.write("\n")
 
                 # Now we can determine samples in a wave
                 n_xsamples = len(waves.wave[0].samples)
@@ -451,19 +483,20 @@ class Oscillo(widgets.HBox):
                         # Use a special ylim which taking account of mag and
                         # ypos, and set_ylim()
                         last_ylim = modified_ylim(
-                            ylim, self.mag[idx],
-                            self.ypos[idx])  # save for blank_screen
+                            ylim, self.mag[idx], self.ypos[idx]
+                        )  # save for blank_screen
                         cur_ax.set_ylim(last_ylim)
 
                         # Generating label for line plot
                         label = chconfig_idx.name
                         if idx == self.ch_active:
-                            label += ' (active)'
+                            label += " (active)"
 
                         # Finally plot line of a channel
                         if self.view_enabled_ch[idx]:
-                            (l, ) = cur_ax.plot(
-                                xser, yser, DEFAULT_CH_COLOR[idx], label=label)
+                            (l,) = cur_ax.plot(
+                                xser, yser, DEFAULT_CH_COLOR[idx], label=label
+                            )
 
                             # Append the line to lines[] to show legend on the
                             # screen.
@@ -479,17 +512,20 @@ class Oscillo(widgets.HBox):
 
                 # ylim is configured for currently active channel
                 self.ax.yaxis.set_major_formatter(formatter)
-                self.ax.set_ylabel("{:s} [{:s}]".format(
-                    chconfig_active.name, chconfig_active.unit))
+                self.ax.set_ylabel(
+                    "{:s} [{:s}]".format(
+                        chconfig_active.name, chconfig_active.unit
+                    )
+                )
 
                 # Show legend here
                 if len(lines) > 0:
                     self.ax.legend(
                         lines,
                         [_.get_label() for _ in lines],
-                        loc='upper left',
+                        loc="upper left",
                         # labelcolor='white',
-                        facecolor='lightgray',
+                        facecolor="lightgray",
                         # edgecolor='white'
                     )
 
@@ -500,11 +536,12 @@ class Oscillo(widgets.HBox):
                 # Save to CSV file if required
                 if self.req_save_csv:
                     for i in range(n_xsamples):
-                        csv_printer.write('{:e}'.format(xser[i]))
+                        csv_printer.write("{:e}".format(xser[i]))
                         for ch_id in range(len(self.last_reply.chconfig)):
-                            csv_printer.write(',{:e}'.format(
-                                csv_samples[ch_id][i]))
-                        csv_printer.write('\n')
+                            csv_printer.write(
+                                ",{:e}".format(csv_samples[ch_id][i])
+                            )
+                        csv_printer.write("\n")
                     csv_printer.close()
                     self.req_save_csv = False
 
@@ -525,6 +562,6 @@ class Oscillo(widgets.HBox):
         """
         for task in asyncio.all_tasks():
             task.cancel()
-        plt.close('all')
+        plt.close("all")
         self.peer.terminate()
         del self.peer

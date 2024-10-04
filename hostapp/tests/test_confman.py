@@ -3,12 +3,13 @@ from confman import *
 enable_debug()
 
 
-class ConfigManagerTestBench():
+class ConfigManagerTestBench:
     def __init__(self):
         import tempfile
 
-        self.__fd = tempfile.NamedTemporaryFile(mode='w')
-        self.__fd.write("""
+        self.__fd = tempfile.NamedTemporaryFile(mode="w")
+        self.__fd.write(
+            """
 comport: pcsim
 lastdir: /Users/yokoyama/tmp
 loglevels:
@@ -22,12 +23,14 @@ chcolors:
 - gold
 - dodgerblue
 - darkred
-- darkblue""")
+- darkblue"""
+        )
 
         self.__fd.flush()
 
         self.__confman = ConfigManager(
-            appname='pytest_ConfigManager', appauthor='com.flogics')
+            appname="pytest_ConfigManager", appauthor="com.flogics"
+        )
 
     def confman(self):
         return self.__confman
@@ -37,6 +40,7 @@ chcolors:
 
     def __del__(self):
         import shutil
+
         shutil.rmtree(self.__confman.confdir)  # XXX  may be danger
 
 
@@ -61,12 +65,12 @@ def test_set2():
     tb.confman().load(tb.fd().name)
     assert tb.confman().updated() is False
 
-    chcolors = tb.confman().get('chcolors')
+    chcolors = tb.confman().get("chcolors")
 
-    chcolors[0] = 'gold'
+    chcolors[0] = "gold"
     tb.confman().set("chcolors", chcolors)
     assert tb.confman().updated() is False
 
-    chcolors[0] = 'blue'
+    chcolors[0] = "blue"
     tb.confman().set("chcolors", chcolors)
     assert tb.confman().updated() is True

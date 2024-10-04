@@ -29,17 +29,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 DEFAULT_CH_COLORS = [
-    'gold',
-    'dodgerblue',
-    'darkred',
-    'darkblue',
+    "gold",
+    "dodgerblue",
+    "darkred",
+    "darkblue",
 ]
 
-DEFAULT_NEW_COLOR = 'black'
+DEFAULT_NEW_COLOR = "black"
 
 
-class ColorManager():
-    def __init__(self, confman, confname='chcolors'):
+class ColorManager:
+    def __init__(self, confman, confname="chcolors"):
         self.confman = confman
         self.confname = confname
 

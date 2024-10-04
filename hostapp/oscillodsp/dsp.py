@@ -25,13 +25,14 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-from datetime import datetime, timedelta
 import logging
 import struct
 import sys
+from datetime import datetime, timedelta
+
 from . import oscillodsp_pb2
 
-FTDI_PRODUCT_IDS = {0xa6d0}
+FTDI_PRODUCT_IDS = {0xA6D0}
 DEFAULT_TIMEOUT_SECONDS = 3.0  # wait forever if None
 
 
@@ -56,8 +57,8 @@ def open_interface(tty, bitrate, logger=None):
 
     # Different procedures are required for PyFTDI and PySerial
     if len(tty) > 4 and tty[:4] == "ftdi":
-        from pyftdi.ftdi import Ftdi
         import pyftdi.serialext
+        from pyftdi.ftdi import Ftdi
 
         for pid in FTDI_PRODUCT_IDS:
             try:
@@ -70,10 +71,12 @@ def open_interface(tty, bitrate, logger=None):
 
         Ftdi.show_devices()
         ser = pyftdi.serialext.serial_for_url(
-            tty, baudrate=bitrate, timeout=DEFAULT_TIMEOUT_SECONDS)
+            tty, baudrate=bitrate, timeout=DEFAULT_TIMEOUT_SECONDS
+        )
         # XXX should raise exception for illegal caudrate
     else:
         import serial
+
         if logger:
             logger.debug("Using pyserial")
         try:
@@ -88,14 +91,17 @@ class DSP:
     """
     DSP class definition to abstract communication with peer DSP
     """
-    def __init__(self,
-                 tty,
-                 bitrate,
-                 loglevel=logging.WARNING,
-                 loghandler=logging.StreamHandler(sys.__stdout__),
-                 console_handler=None,
-                 file_handler=None,
-                 logformatter=logging.Formatter('dsp.py: %(message)s')):
+
+    def __init__(
+        self,
+        tty,
+        bitrate,
+        loglevel=logging.WARNING,
+        loghandler=logging.StreamHandler(sys.__stdout__),
+        console_handler=None,
+        file_handler=None,
+        logformatter=logging.Formatter("dsp.py: %(message)s"),
+    ):
 
         self.debug_ct = 0
 
@@ -141,7 +147,7 @@ class DSP:
 
         self.logger.debug("send_msg length = {:d}".format(length))
 
-        self.ser.write(struct.pack('!H', length))
+        self.ser.write(struct.pack("!H", length))
         self.ser.write(s)
         self.ser.flush()
 
@@ -158,17 +164,20 @@ class DSP:
         """
         s = self.ser.read(2)
         if len(s) < 2:
-            raise Exception('Timeout.  No response from DSP.')
+            raise Exception("Timeout.  No response from DSP.")
 
-        length = struct.unpack('!H', s)[0]
+        length = struct.unpack("!H", s)[0]
         self.logger.debug("recv_msg_raw length = {:d}".format(length))
 
         self.recvd_bytes += 2 + length
         time_delta = datetime.now() - self.last_recvdtime
         if time_delta > timedelta(seconds=1):
             sec = time_delta.seconds + time_delta.microseconds / 1e6
-            self.logger.info("recv rate = {:5.1f} kbps"  # yapf: disable
-                             .format(self.recvd_bytes * 8 / sec / 1e3))
+            self.logger.info(
+                "recv rate = {:5.1f} kbps".format(  # yapf: disable
+                    self.recvd_bytes * 8 / sec / 1e3
+                )
+            )
             self.recvd_bytes = 0
             self.last_recvdtime = datetime.now()
 
@@ -185,14 +194,20 @@ class DSP:
         reply = self.recv_msg_raw()
 
         if id_when_sent is not None and reply.id != id_when_sent:
-            self.logger.error('[ERROR] ID mismatch:')
-            self.logger.error('  expected={:d} received={:d}'  # yapf: disable
-                              .format(id_when_sent, reply.id))
+            self.logger.error("[ERROR] ID mismatch:")
+            self.logger.error(
+                "  expected={:d} received={:d}".format(  # yapf: disable
+                    id_when_sent, reply.id
+                )
+            )
 
         # XXX  Don't we have much better way?
-        if reply.HasField('ack') and reply.ack.err != oscillodsp_pb2.NoError:
-            raise Exception('reply.ack has error: {:s}'.format(
-                oscillodsp_pb2._ERRORCODE.values[reply.ack.err].name))
+        if reply.HasField("ack") and reply.ack.err != oscillodsp_pb2.NoError:
+            raise Exception(
+                "reply.ack has error: {:s}".format(
+                    oscillodsp_pb2._ERRORCODE.values[reply.ack.err].name
+                )
+            )
 
         return reply
 
@@ -205,13 +220,15 @@ class DSP:
         id = self.send_msg()
         return self.recv_msg(id).echorep.content
 
-    def config(self,
-               resolution,
-               trigmode,
-               trigtype,
-               ch_trig=0,
-               triglevel=0,
-               timescale=0.0):
+    def config(
+        self,
+        resolution,
+        trigmode,
+        trigtype,
+        ch_trig=0,
+        triglevel=0,
+        timescale=0.0,
+    ):
         """
         Message to DSP: Configure
         @param resolution is number of quantization bits of each signal sample.
@@ -228,8 +245,8 @@ class DSP:
         if DEBUG_TIMEOUT:
             self.debug_ct += 1
             print("debug_ct:", self.debug_ct)
-            if (self.debug_ct > 3):
-                raise Exception('Timeout.  No response from DSP.')
+            if self.debug_ct > 3:
+                raise Exception("Timeout.  No response from DSP.")
 
         self.msg.config.resolution = resolution
         self.msg.config.trigmode = trigmode
@@ -240,7 +257,7 @@ class DSP:
         id = self.send_msg()
         reply = self.recv_msg(id).configreply
         if reply.err != oscillodsp_pb2.NoError:
-            raise Exception('Configuration Error')
+            raise Exception("Configuration Error")
         return reply
 
     def get_waves(self):
@@ -252,8 +269,8 @@ class DSP:
         if DEBUG_TIMEOUT:
             self.debug_ct += 1
             print("debug_ct:", self.debug_ct)
-            if (self.debug_ct > 10):
-                raise Exception('Timeout.  No response from DSP.')
+            if self.debug_ct > 10:
+                raise Exception("Timeout.  No response from DSP.")
 
         self.msg.getwave.SetInParent()
         id = self.send_msg()
@@ -280,5 +297,8 @@ class DSP:
         Check and show transmit and receive buffer status
         """
         self.logger.warning("In check()")
-        self.logger.warning("  in: {:d} out: {:d}\n"  # yapf: disable
-                            .format(self.ser.in_waiting, self.ser.out_waiting))
+        self.logger.warning(
+            "  in: {:d} out: {:d}\n".format(  # yapf: disable
+                self.ser.in_waiting, self.ser.out_waiting
+            )
+        )

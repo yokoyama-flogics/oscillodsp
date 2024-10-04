@@ -28,17 +28,18 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
-import appdirs
 import os
 import pathlib
+
+import appdirs
 import yaml
 
 debug = False
 
-CONFIGFILE = 'configfile'
+CONFIGFILE = "configfile"
 
 DEFAULT_CONFIG = {
-    'lastdir': str(pathlib.Path.home()),
+    "lastdir": str(pathlib.Path.home()),
 }
 
 
@@ -52,8 +53,8 @@ def diag(s):
         print("confman:", s)
 
 
-class ConfigManager():
-    def __init__(self, appname, appauthor, init_filename='init.yaml'):
+class ConfigManager:
+    def __init__(self, appname, appauthor, init_filename="init.yaml"):
         diag("__init__")
 
         self.confdir = appdirs.user_data_dir(appname, appauthor)
@@ -96,6 +97,7 @@ class ConfigManager():
 
     def get(self, name):
         from copy import copy
+
         diag("get")
         if name in self.config:
             return copy(self.config[name])
@@ -103,8 +105,11 @@ class ConfigManager():
             return None
 
     def set(self, name, val, save_required=True):
-        diag("set (1): {} {} {} {}".format(self.config, name, val,
-                                           save_required))
+        diag(
+            "set (1): {} {} {} {}".format(
+                self.config, name, val, save_required
+            )
+        )
         if name in self.config and self.config[name] == val:
             diag("set: update")
             return
@@ -112,8 +117,11 @@ class ConfigManager():
         self.config[name] = val
         if save_required:
             self.__updated = True
-        diag("set (2): {} {} {} {}".format(self.config, name, val,
-                                           save_required))
+        diag(
+            "set (2): {} {} {} {}".format(
+                self.config, name, val, save_required
+            )
+        )
 
     def load(self, filename):
         diag("load")
@@ -136,7 +144,7 @@ class ConfigManager():
         if filename is None:
             raise ValueError("filename is None")
 
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             f.write(yaml.dump(self.config))
         self.set_config_filename(filename)
         self.__save_init()
@@ -159,5 +167,5 @@ class ConfigManager():
 
     def __save_init(self):
         diag("__save_init")
-        with open(self.init_filename, 'w') as f:
+        with open(self.init_filename, "w") as f:
             f.write(yaml.dump(self.init))

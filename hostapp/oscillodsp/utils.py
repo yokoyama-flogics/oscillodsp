@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 from datetime import datetime
 
 
-def get_filename(ext='.out'):
+def get_filename(ext=".out"):
     """
     Return a file name which contains date-time string.
     """
@@ -49,8 +49,8 @@ def modified_ylim(ylim, mag, ypos):
 
 def run_pcsim(pcsim_path):
     import atexit
-    import time
     import os
+    import time
 
     PTY_NAME = "ptyname.txt"
     TIME_MARGIN = 1.0
@@ -58,13 +58,13 @@ def run_pcsim(pcsim_path):
     fpath, fname = os.path.split(pcsim_path)
 
     def kill_sim():
-        os.system('killall {:s}'.format(fname))
+        os.system("killall {:s}".format(fname))
 
-    os.system('cd {:s} && make'.format(fpath))
+    os.system("cd {:s} && make".format(fpath))
     if not os.path.isfile(pcsim_path):
         raise (Exception("PC simulator can't be compiled"))
 
-    os.system('{:s} &'.format(pcsim_path))  # Ruin in background
+    os.system("{:s} &".format(pcsim_path))  # Ruin in background
 
     # When Jupyter kernel shutdowns, ensure all pcsim(s) are terminated
     atexit.register(kill_sim)
@@ -86,12 +86,13 @@ class Blinker:
     Method active() returns True in the first half of the period, and return
     False otherwise.
     """
+
     def __init__(self, period=1.0):
         self.period = period
         self.reset()
 
     def active(self):
-        passed = (datetime.now() - self.start)
+        passed = datetime.now() - self.start
         sec_passed = passed.seconds + passed.microseconds / 1e6
         sec_passed %= self.period
         return sec_passed < self.period / 2
