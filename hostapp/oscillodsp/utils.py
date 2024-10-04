@@ -64,7 +64,7 @@ def run_pcsim(pcsim_path):
     if not os.path.isfile(pcsim_path):
         raise (Exception("PC simulator can't be compiled"))
 
-    os.system("{:s} &".format(pcsim_path))  # Ruin in background
+    os.system("{:s} &".format(pcsim_path))  # Run in background
 
     # When Jupyter kernel shutdowns, ensure all pcsim(s) are terminated
     atexit.register(kill_sim)

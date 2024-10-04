@@ -174,7 +174,7 @@ class DSP:
         if time_delta > timedelta(seconds=1):
             sec = time_delta.seconds + time_delta.microseconds / 1e6
             self.logger.info(
-                "recv rate = {:5.1f} kbps".format(  # yapf: disable
+                "recv rate = {:5.1f} kbps".format(
                     self.recvd_bytes * 8 / sec / 1e3
                 )
             )
@@ -196,7 +196,7 @@ class DSP:
         if id_when_sent is not None and reply.id != id_when_sent:
             self.logger.error("[ERROR] ID mismatch:")
             self.logger.error(
-                "  expected={:d} received={:d}".format(  # yapf: disable
+                "  expected={:d} received={:d}".format(
                     id_when_sent, reply.id
                 )
             )
@@ -298,7 +298,7 @@ class DSP:
         """
         self.logger.warning("In check()")
         self.logger.warning(
-            "  in: {:d} out: {:d}\n".format(  # yapf: disable
+            "  in: {:d} out: {:d}\n".format(
                 self.ser.in_waiting, self.ser.out_waiting
             )
         )

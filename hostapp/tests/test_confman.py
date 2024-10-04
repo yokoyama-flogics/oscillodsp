@@ -41,7 +41,7 @@ chcolors:
     def __del__(self):
         import shutil
 
-        shutil.rmtree(self.__confman.confdir)  # XXX  may be danger
+        shutil.rmtree(self.__confman.confdir)  # XXX  may be dangerous
 
 
 def test_load1():

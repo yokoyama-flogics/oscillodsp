@@ -106,7 +106,7 @@ def trig_status_txt(s):
 
 def slider_tscale_to_actual_tscale(slider_val, max_timescale):
     """
-    Convert a slider_tscale infernal value to the actual exponential time
+    Convert a slider_tscale internal value to the actual exponential time
     scale value
     """
     return max_timescale / math.pow(10, slider_val / TSCALE_SLIDER_DIV)
@@ -526,8 +526,8 @@ class LogViewerDialog(QtWidgets.QDialog):
         cb1.stateChanged.connect(self.checkbox_autoscroll_changed)
 
         cb2 = QCheckBox(
-            "&Set the Log Levels as the default"
-            + " (You need to save your settings later.)"
+            "&Set the Log Levels as the default (You need to save your "
+            "settings later.)"
         )
         self.checkbox_setdefault = cb2
 
@@ -1122,7 +1122,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
     def buttons_visibility_changed(self):
         """
         Event handler which should be called when user clicked channel
-        visilibility buttons
+        visibility buttons
         """
         b = self.sender()
         id = int(b.text())
@@ -1351,7 +1351,7 @@ class OscilloWidget(QtWidgets.QMainWindow):
 
                     # Use a special ylim which taking account of mag and
                     # ypos, and set_ylim()
-                    self.last_ylim = modified_ylim(  # yapf: disable
+                    self.last_ylim = modified_ylim(
                         ylim, self.mag10[idx] / 10, self.ypos10[idx] / 10
                     )  # save for blank_screen
                     cur_ax.set_ylim(self.last_ylim)
@@ -1657,7 +1657,7 @@ class QtOscillo:
         self.target = dsp.DSP(
             self.dsp_tty,
             self.dsp_bitrate,
-            loglevel=find_in_listdict(  # yapf: disable
+            loglevel=find_in_listdict(
                 self.widget.loglevels, "from", "dsp", "level"
             ),
             console_handler=logging.StreamHandler(),
