@@ -5,3 +5,6 @@ ptyname.txt
 tags
 *.swp
 *.keep
+
+# Developers should generate this themselves.
+dev-requirements.txt
