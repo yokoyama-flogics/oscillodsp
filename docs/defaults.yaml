@@ -1,0 +1,30 @@
+# $ pandoc -d defaults.yaml
+
+# XXX The following description recognizes metadata.yaml as Markdown.
+# from: markdown_strict+raw_attribute
+from: markdown-implicit_figures-smart
+
+input-files:
+    - metadata.yaml
+    - qtoscillo.md
+
+output-file: qtoscillo.tex
+
+standalone: true
+pdf-engine: xelatex
+shift-heading-level-by: -1
+
+variables:
+    documentclass: bxjsarticle
+    classoption:
+        - pandoc
+        - unicode
+        - jafont=haranoaji
+        # When explicitly specified jafont above, might also need oneweight
+        # below.  Instead, \textbf becomes true Bold-mincho.
+        # Refer https://zrbabbler.hatenablog.com/entry/2020/03/29/234435
+        - oneweight
+    colorlinks: true
+    papersize: a4
+    linkcolor: Blue
+    filecolor: Blue

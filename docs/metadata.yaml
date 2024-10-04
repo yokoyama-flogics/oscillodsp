@@ -1,0 +1,144 @@
+---
+author:
+	- ファームロジックス　横山篤史（contact@flogics.com）
+
+header-includes: |
+    ```{=latex}
+    % To check if running for Beamer
+    \newif\ifBeamer
+    \makeatletter
+    \@ifclassloaded{beamer}
+      {\Beamertrue}%
+      {\Beamerfalse}%
+    \makeatother%
+    %
+    \ifBeamer
+      \usepackage{zxjatype}
+      \usepackage[haranoaji]{zxjafont}
+      %
+      % Beamer documentclass doesn't accept pandoc classoption, so we need this.
+      % Refer https://ctan.math.washington.edu/tex-archive/language/japanese/BX/bxjscls/bxjscls.pdf for bxjspandoc
+      % bxjspandoc package avoids … is treated as \ldots.
+      \usepackage{bxjspandoc}
+      %
+      % Beamer settings
+      \setbeamertemplate{headline}[text line]{}
+      % Refer https://tex.stackexchange.com/questions/333587/beamer-frame-number-without-total
+      \setbeamertemplate{footline}{
+        \leavevmode\kern1em
+        \copyright{} 2021 \href{https://flogics.com}{Firmlogics}
+        \hfill
+        \usebeamercolor[fg]{page number in head/foot}
+        \usebeamerfont{page number in head/foot}
+        \insertframenumber\,/\,\inserttotalframenumber\kern1em\vskip2pt
+      }
+      \linespread{1.2}\selectfont
+      \titlegraphic{\vbox to 0pt{\includegraphics[height=0.5cm]{image/firmlogics_adjusted_transparent_320}\vss}}
+      % \setbeamerfont{institute}{size=\tiny}
+    \fi
+    %
+    % Centering \includegraphics
+    % Refer https://stackoverflow.com/questions/45378434/customizing-body-text-and-images-using-markdown-pandoc-beamer-to-create-pdf-sl
+    \ifdefined\includegraphics%
+      %   Save the meaning of \includegraphics
+      \LetLtxMacro\latexincludegraphics\includegraphics
+      %   Update the include graphics command to include centering
+      \renewcommand{\includegraphics}[2][]{%
+        \begin{center}
+          \latexincludegraphics[#1]{#2}
+        \end{center}
+      }
+    \fi
+    %
+    \ifBeamer
+      % Make each frame appear in the PDF toc.
+      % Refer https://tex.stackexchange.com/questions/17230/beamer-how-to-make-each-frame-appear-in-the-pdf-toc
+      % and https://tex.stackexchange.com/questions/66519/make-each-frame-not-slide-appear-in-the-pdf-bookmarks-with-beamer
+      \usepackage{bookmark}
+      \usepackage{etoolbox}
+      \makeatletter
+      % save the current definition of \beamer@@frametitle
+      \let\nobookmarkbeamer@@frametitle\beamer@@frametitle
+      % then patch it to do the bookmarks and/or TOC entries
+      \apptocmd{\beamer@@frametitle}{\only<1>{%
+        % keep this to add the frame title to the TOC at the "subsection level"
+        \addtocontents{toc}{\protect\beamer@subsectionintoc{\the\c@section}{0}{#1}{\the\c@page}{\the\c@part}%
+              {\the\beamer@tocsectionnumber}}%
+        % keep this line to add a bookmark that shows up in the PDF TOC at the subsection level
+        \bookmark[page=\the\c@page,level=3]{#1}%
+        }}%
+      {\message{** patching of \string\beamer@@frametitle succeeded **}}%
+      {\errmessage{** patching of \string\beamer@@frametitle failed **}}%
+
+      \pretocmd{\beamer@checknoslide}{%
+        % ensure the bookmark is not created if the slide is filtered out
+        \let\beamer@@frametitle\nobookmarkbeamer@@frametitle
+        }%
+      {\message{** patching of \string\beamer@checknoslide succeeded **}}%
+      {\errmessage{** patching of \string\beamer@checknoslide failed **}}%
+      \makeatother
+    \else
+      % Make figures floating
+      \usepackage{float}
+      \floatplacement{figure}{H}
+      %
+      % Make quotes sophisticated
+      % Refer https://tex.stackexchange.com/questions/154528/how-to-change-the-background-color-and-border-of-a-pandoc-generated-blockquote
+      \usepackage{tcolorbox}
+      \newtcolorbox{myquote}{colback=black!5!white, colframe=black!75!white}
+      \renewenvironment{quote}{\begin{myquote}}{\end{myquote}}
+    \fi
+    %
+    % snugshade environment requires this
+    \usepackage{framed}
+    %
+    % Define shadecolor for snugshade
+    % Refer https://qiita.com/kaityo256/items/5a911ab08de75917ba29
+    \definecolor{shadecolor}{RGB}{240,240,240}
+    %
+    % Change code blocks font size (for fence)
+    \ifdefined\Shaded%
+      % Refer https://tex.stackexchange.com/questions/82028/how-do-i-create-a-variant-of-the-snugshade-box-from-the-framed-package-to-wrap-m
+      \usepackage{tcolorbox}
+      \newtcolorbox{myquote3}{colback=black!5!white, colframe=black!75!white, arc=0pt, boxrule=1pt}
+      \renewenvironment{Shaded}{%
+        \ifBeamer\else\begin{myquote3}\fi
+        % Refer https://stackoverflow.com/questions/27000906/how-to-set-the-font-size-for-code-blocks-in-pandoc-markdown
+        \footnotesize
+        \ifBeamer
+          \linespread{1.0}\selectfont
+        \fi
+      }{%
+        \ifBeamer\else\end{myquote3}\fi
+      }
+    \fi
+    %
+    \ifBeamer
+    \else
+      % Change font for fenced comment
+      \ifdefined\CommentTok
+        \renewcommand{\CommentTok}[1]{%
+          \textcolor[rgb]{0.25,0.41,0.48}{\textgt{\textit{#1}}}
+        }
+      \fi
+    \fi
+    %
+    % Change code blocks font size (for verbatim)
+    % Refer https://tex.stackexchange.com/questions/468824/how-can-i-put-every-verbatim-environment-inside-a-shaded-environment-by-chan
+    \usepackage{fancyvrb}
+    \usepackage{tcolorbox}
+    \newtcolorbox{myquote2}{colback=black!5!white, colframe=black!75!white}
+    \renewenvironment{verbatim}{%
+      \VerbatimEnvironment
+      \begin{myquote2}
+      \footnotesize
+      \ifBeamer
+        \linespread{1.0}\selectfont
+      \fi
+      \begin{Verbatim}%
+    }{%
+      \end{Verbatim}%
+      \end{myquote2}
+    }
+    ```
+...
