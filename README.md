@@ -47,11 +47,14 @@ OscilloDSP reduces the communication load between an embedded processor and a PC
 
 ## Documentation
 
+Initially, the OscilloDSP host application (hostapp) was designed using IPyWidgets on Jupyter Notebook. However, due to the difficulty of maintaining the design with IPyWidgets, and potential dependency issues with Jupyter and IPyWidgets versions, we have decided to mark the Jupyter version as obsolete. Going forward, please use the Qt application version described below. (If maintaining the Qt version also becomes difficult, we may consider rewriting it in Flet.)
+
 | 日本語 | English |
 |--------|---------|
 | [インストール方法](docs/installation.md) | [Installation Guide](docs/installation_en.md) |
-| [使い方](docs/usage.md) | [How to Use](docs/usage_en.md) |
-| [パソコン用のオシロスコープアプリ](hostapp/oscillo.ipynb) | [Oscilloscope app for PC](hostapp/oscillo_en.ipynb) |
+| [Jupyter アプリの使い方](docs/usage.md) | [How to Use Jupyter app](docs/usage_en.md) |
+| [Jupyter アプリ](hostapp/oscillo.ipynb) | [Jupyter app](hostapp/oscillo_en.ipynb) |
+| [Qt アプリの使い方](docs/qtoscillo.md) | [How to Use Qt app](docs/qtoscillo_en.md) |
 
 ## Known Issues
 

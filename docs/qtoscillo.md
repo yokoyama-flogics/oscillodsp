@@ -319,6 +319,6 @@ Z:\yokoyama\oscillodsp> dist\qtoscillo\qtoscillo.exe
 のように実行し、cmd.exeの画面にエラーメッセージが出たら、それをコピーしてお送りください。
 確認させて頂きます。
 
-御不明な点がございましたら、お気軽にお問い合わせください。（[yokoyama@flogics.com](mailto:yokoyama@flogics.com)）
+御不明な点がございましたら、お気軽にお問い合わせください。（[contact@flogics.com](mailto:contact@flogics.com)）
 
 [ドキュメントここまで]
