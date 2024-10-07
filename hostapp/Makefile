@@ -22,8 +22,8 @@ run: $(PROTOBUF_PY)
 	python ${APPSRC}
 
 format:
-	isort $(ALLSRCS)
-	black $(ALLSRCS)
+	isort .
+	black .
 
 lint:
 	flake8 $(FLAKE8SRCS)

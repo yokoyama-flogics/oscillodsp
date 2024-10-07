@@ -196,9 +196,7 @@ class DSP:
         if id_when_sent is not None and reply.id != id_when_sent:
             self.logger.error("[ERROR] ID mismatch:")
             self.logger.error(
-                "  expected={:d} received={:d}".format(
-                    id_when_sent, reply.id
-                )
+                "  expected={:d} received={:d}".format(id_when_sent, reply.id)
             )
 
         # XXX  Don't we have much better way?

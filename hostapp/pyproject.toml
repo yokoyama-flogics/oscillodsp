@@ -1,7 +1,9 @@
 [tool.isort]
 profile = "black"
 split_on_trailing_comma = true
+skip_glob = ["*_pb2.py"]
 
 [tool.black]
 preview = true
 line_length = 79
+extend-exclude = '''.*_pb2\.py'''
