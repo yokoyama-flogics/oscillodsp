@@ -1,6 +1,7 @@
 [MASTER]
 extension-pkg-allow-list=PySide6
 disable=fixme
+ignore-patterns=.*_pb2\.py,whitelist.py
 
 [MESSAGES CONTROL]
 disable=missing-function-docstring

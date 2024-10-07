@@ -31,6 +31,7 @@ lint:
 	vulture $(SRCS) $(WHITELIST)
 	(cd oscillodsp; vulture $(LIBSRCS) $(WHITELIST))
 	vulture $(PYTESTSRCS)
+	pylint .
 
 test:
 	python -m pytest -v
