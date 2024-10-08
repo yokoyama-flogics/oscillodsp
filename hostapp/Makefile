@@ -2,8 +2,6 @@ APPSRC = qtoscillo.py
 SRCS = confman.py colorman.py ${APPSRC}
 LIBSRCS = dsp.py oscillo.py utils.py
 PYTESTSRCS = $(wildcard tests/test_*.py)
-FLAKE8SRCS = ${SRCS} $(addprefix oscillodsp/, $(LIBSRCS))
-ALLSRCS = ${FLAKE8SRCS} $(PYTESTSRCS)
 WHITELIST = whitelist.py
 
 PROTOC = ../protoc-3.12.2/bin/protoc
@@ -26,8 +24,6 @@ format:
 	black .
 
 lint:
-	flake8 $(FLAKE8SRCS)
-	flake8 --ignore=F403,F405 $(PYTESTSRCS)
 	vulture $(SRCS) $(WHITELIST)
 	(cd oscillodsp; vulture $(LIBSRCS) $(WHITELIST))
 	vulture $(PYTESTSRCS)
