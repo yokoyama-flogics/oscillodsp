@@ -30,7 +30,7 @@ jobs:
         cd hostapp
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install pylint
+        pip install pylint pytest
     - name: Analysing the code with pylint
       run: |
         cd hostapp
