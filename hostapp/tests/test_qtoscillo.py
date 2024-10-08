@@ -1,6 +1,8 @@
+# pylint: disable=missing-module-docstring
+
 import pytest
 
-from qtoscillo import *
+from qtoscillo import *  # pylint: disable=wildcard-import,unused-wildcard-import
 
 
 def test_find_in_listdict1():

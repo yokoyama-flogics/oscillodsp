@@ -30,8 +30,10 @@ import struct
 import sys
 from datetime import datetime, timedelta
 
-from . import oscillodsp_pb2
+from . import oscillodsp_pb2  # pylint: disable=no-name-in-module
 
+DEBUG_TIMEOUT_CONFIG = False
+DEBUG_TIMEOUT_GET_WAVES = False
 FTDI_PRODUCT_IDS = {0xA6D0}
 DEFAULT_TIMEOUT_SECONDS = 3.0  # wait forever if None
 
@@ -42,10 +44,10 @@ def dump(s):
     Currently not used.
     @param s is buffer
     """
-    for i in range(len(s)):
+    for i, value in enumerate(s):
         if i % 16 == 0:
-            sys.stdout.write("{:04x}: ".format(i))
-        sys.stdout.write("{:02x} ".format(s[i]))
+            sys.stdout.write(f"{i:04x}: ")
+        sys.stdout.write(f"{value:02x} ")
         if i % 16 == 15:
             print("")
     print("")
@@ -53,12 +55,14 @@ def dump(s):
 
 def open_interface(tty, bitrate, logger=None):
     if logger:
-        logger.debug("open_interface: {} {:d}".format(tty, bitrate))
+        logger.debug(f"open_interface: {tty} {bitrate:d}")
 
     # Different procedures are required for PyFTDI and PySerial
     if len(tty) > 4 and tty[:4] == "ftdi":
-        import pyftdi.serialext
-        from pyftdi.ftdi import Ftdi
+        # The reason for importing here is that it may be required for
+        # PyInstaller. This needs to be re-checked.
+        import pyftdi.serialext  # pylint: disable=import-outside-toplevel
+        from pyftdi.ftdi import Ftdi  # pylint: disable=import-outside-toplevel
 
         for pid in FTDI_PRODUCT_IDS:
             try:
@@ -75,14 +79,12 @@ def open_interface(tty, bitrate, logger=None):
         )
         # XXX should raise exception for illegal caudrate
     else:
-        import serial
+        import serial  # pylint: disable=import-outside-toplevel
 
         if logger:
             logger.debug("Using pyserial")
-        try:
-            ser = serial.Serial(tty, bitrate, timeout=DEFAULT_TIMEOUT_SECONDS)
-        except serial.SerialException:
-            raise
+        # This may raise serial.SerialException:
+        ser = serial.Serial(tty, bitrate, timeout=DEFAULT_TIMEOUT_SECONDS)
 
     return ser
 
@@ -92,7 +94,8 @@ class DSP:
     DSP class definition to abstract communication with peer DSP
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,
+        # pylint: disable=too-many-positional-arguments
         self,
         tty,
         bitrate,
@@ -132,12 +135,12 @@ class DSP:
         self.logger.info("Deleting DSP object")
         del self.logger
 
-    def send_msg(self, withId=True):
+    def send_msg(self, with_id=True):
         """
         Send a message to DSP
-        @param withId is if we need to add sequential ID for consistency check
+        @param with_id is if we need to add sequential ID for consistency check
         """
-        if withId:
+        if with_id:
             self.msg.id = self.id
         else:
             self.msg.id = 0
@@ -145,18 +148,17 @@ class DSP:
         s = self.msg.SerializeToString()
         length = len(s)
 
-        self.logger.debug("send_msg length = {:d}".format(length))
+        self.logger.debug("send_msg length = %d", length)
 
         self.ser.write(struct.pack("!H", length))
         self.ser.write(s)
         self.ser.flush()
 
-        if withId:
+        if with_id:
             last_sent_id = self.id
             self.id += 1
             return last_sent_id
-        else:
-            return None
+        return None
 
     def recv_msg_raw(self):
         """
@@ -164,19 +166,17 @@ class DSP:
         """
         s = self.ser.read(2)
         if len(s) < 2:
-            raise Exception("Timeout.  No response from DSP.")
+            raise TimeoutError("Timeout.  No response from DSP.")
 
         length = struct.unpack("!H", s)[0]
-        self.logger.debug("recv_msg_raw length = {:d}".format(length))
+        self.logger.debug("recv_msg_raw length = %d", length)
 
         self.recvd_bytes += 2 + length
         time_delta = datetime.now() - self.last_recvdtime
         if time_delta > timedelta(seconds=1):
             sec = time_delta.seconds + time_delta.microseconds / 1e6
             self.logger.info(
-                "recv rate = {:5.1f} kbps".format(
-                    self.recvd_bytes * 8 / sec / 1e3
-                )
+                "recv rate = %5.1f kbps", self.recvd_bytes * 8 / sec / 1e3
             )
             self.recvd_bytes = 0
             self.last_recvdtime = datetime.now()
@@ -196,16 +196,13 @@ class DSP:
         if id_when_sent is not None and reply.id != id_when_sent:
             self.logger.error("[ERROR] ID mismatch:")
             self.logger.error(
-                "  expected={:d} received={:d}".format(id_when_sent, reply.id)
+                "  expected=%d received=%d", id_when_sent, reply.id
             )
 
         # XXX  Don't we have much better way?
         if reply.HasField("ack") and reply.ack.err != oscillodsp_pb2.NoError:
-            raise Exception(
-                "reply.ack has error: {:s}".format(
-                    oscillodsp_pb2._ERRORCODE.values[reply.ack.err].name
-                )
-            )
+            error_code_name = oscillodsp_pb2.ErrorCode.Name(reply.ack.err)
+            raise ValueError(f"reply.ack has error: {error_code_name}")
 
         return reply
 
@@ -215,10 +212,11 @@ class DSP:
         @param content is echo message to DSP peer
         """
         self.msg.echoreq.content = content
-        id = self.send_msg()
-        return self.recv_msg(id).echorep.content
+        id_ = self.send_msg()
+        return self.recv_msg(id_).echorep.content
 
-    def config(
+    def config(  # pylint: disable=too-many-arguments,
+        # pylint: disable=too-many-positional-arguments
         self,
         resolution,
         trigmode,
@@ -239,12 +237,11 @@ class DSP:
         @param timescale is time length (in seconds) corresponds to
                oscilloscope screen width
         """
-        DEBUG_TIMEOUT = False
-        if DEBUG_TIMEOUT:
+        if DEBUG_TIMEOUT_CONFIG:
             self.debug_ct += 1
             print("debug_ct:", self.debug_ct)
             if self.debug_ct > 3:
-                raise Exception("Timeout.  No response from DSP.")
+                raise TimeoutError("Timeout.  No response from DSP.")
 
         self.msg.config.resolution = resolution
         self.msg.config.trigmode = trigmode
@@ -252,10 +249,10 @@ class DSP:
         self.msg.config.ch_trig = ch_trig
         self.msg.config.triglevel = triglevel
         self.msg.config.timescale = timescale
-        id = self.send_msg()
-        reply = self.recv_msg(id).configreply
+        id_ = self.send_msg()
+        reply = self.recv_msg(id_).configreply
         if reply.err != oscillodsp_pb2.NoError:
-            raise Exception("Configuration Error")
+            raise RuntimeError("Configuration Error")
         return reply
 
     def get_waves(self):
@@ -263,16 +260,15 @@ class DSP:
         Message to DSP: GetWaveGroup
         Returns a WaveGroup object
         """
-        DEBUG_TIMEOUT = False
-        if DEBUG_TIMEOUT:
+        if DEBUG_TIMEOUT_GET_WAVES:
             self.debug_ct += 1
             print("debug_ct:", self.debug_ct)
             if self.debug_ct > 10:
-                raise Exception("Timeout.  No response from DSP.")
+                raise TimeoutError("Timeout.  No response from DSP.")
 
         self.msg.getwave.SetInParent()
-        id = self.send_msg()
-        return self.recv_msg(id).wavegroup
+        id_ = self.send_msg()
+        return self.recv_msg(id_).wavegroup
 
     def terminate(self):
         """
@@ -296,7 +292,5 @@ class DSP:
         """
         self.logger.warning("In check()")
         self.logger.warning(
-            "  in: {:d} out: {:d}\n".format(
-                self.ser.in_waiting, self.ser.out_waiting
-            )
+            "  in: %d out: %d\n", self.ser.in_waiting, self.ser.out_waiting
         )

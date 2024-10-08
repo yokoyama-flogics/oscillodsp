@@ -30,11 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
 import pathlib
+from copy import copy
 
 import appdirs
 import yaml
-
-debug = False
 
 CONFIGFILE = "configfile"
 
@@ -43,19 +42,33 @@ DEFAULT_CONFIG = {
 }
 
 
-def enable_debug():
-    global debug
-    debug = True
+class DebugConfig:  # pylint: disable=too-few-public-methods
+    """
+    Debug Configuration
+    """
+
+    debug_flag = False
+
+    @classmethod
+    def enable_debug(cls):
+        cls.debug_flag = True
 
 
 def diag(s):
-    if debug:
+    if DebugConfig.debug_flag:
         print("confman:", s)
 
 
-class ConfigManager:
+class ConfigManager:  # pylint: disable=missing-class-docstring
     def __init__(self, appname, appauthor, init_filename="init.yaml"):
         diag("__init__")
+
+        # Defining attributes here to avoid pylint warnings (W0201: Attribute
+        # defined outside __init__).
+        # These attributes are initialized elsewhere in the code, but pylint
+        # expects them to be defined in __init__.
+        self.__updated = None
+        self.config = None
 
         self.confdir = appdirs.user_data_dir(appname, appauthor)
         pathlib.Path(self.confdir).mkdir(parents=True, exist_ok=True)
@@ -72,7 +85,8 @@ class ConfigManager:
         if new:
             self.init = {}
         elif os.path.exists(self.init_filename):
-            self.init = yaml.load(open(self.init_filename), Loader=yaml.Loader)
+            with open(self.init_filename, "r", encoding="utf-8") as f:
+                self.init = yaml.load(f, Loader=yaml.Loader)
             if self.init is None:
                 self.init = {}
         else:
@@ -96,20 +110,13 @@ class ConfigManager:
         self.__updated = True
 
     def get(self, name):
-        from copy import copy
-
         diag("get")
         if name in self.config:
             return copy(self.config[name])
-        else:
-            return None
+        return None
 
     def set(self, name, val, save_required=True):
-        diag(
-            "set (1): {} {} {} {}".format(
-                self.config, name, val, save_required
-            )
-        )
+        diag(f"set (1): {self.config} {name} {val} {save_required}")
         if name in self.config and self.config[name] == val:
             diag("set: update")
             return
@@ -117,16 +124,13 @@ class ConfigManager:
         self.config[name] = val
         if save_required:
             self.__updated = True
-        diag(
-            "set (2): {} {} {} {}".format(
-                self.config, name, val, save_required
-            )
-        )
+        diag(f"set (2): {self.config} {name} {val} {save_required}")
 
     def load(self, filename):
         diag("load")
         if os.path.exists(filename):
-            self.config = yaml.load(open(filename), Loader=yaml.Loader)
+            with open(filename, "r", encoding="utf-8") as f:
+                self.config = yaml.load(f, Loader=yaml.Loader)
             if self.config is None:
                 self.config = {}
             else:
@@ -144,7 +148,7 @@ class ConfigManager:
         if filename is None:
             raise ValueError("filename is None")
 
-        with open(filename, "w") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             f.write(yaml.dump(self.config))
         self.set_config_filename(filename)
         self.__save_init()
@@ -167,5 +171,5 @@ class ConfigManager:
 
     def __save_init(self):
         diag("__save_init")
-        with open(self.init_filename, "w") as f:
+        with open(self.init_filename, "w", encoding="utf-8") as f:
             f.write(yaml.dump(self.init))

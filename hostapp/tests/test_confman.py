@@ -1,13 +1,20 @@
-from confman import *
+# pylint: disable=missing-module-docstring
 
-enable_debug()
+import shutil
+import tempfile
+
+from confman import *  # pylint: disable=wildcard-import,unused-wildcard-import
+
+DebugConfig.enable_debug()
 
 
-class ConfigManagerTestBench:
+class ConfigManagerTestBench:  # pylint: disable=missing-class-docstring
     def __init__(self):
-        import tempfile
-
-        self.__fd = tempfile.NamedTemporaryFile(mode="w")
+        self.__fd = (
+            tempfile.NamedTemporaryFile(  # pylint: disable=consider-using-with
+                mode="w"
+            )
+        )
         self.__fd.write(
             """
 comport: pcsim
@@ -39,8 +46,6 @@ chcolors:
         return self.__fd
 
     def __del__(self):
-        import shutil
-
         shutil.rmtree(self.__confman.confdir)  # XXX  may be dangerous
 
 

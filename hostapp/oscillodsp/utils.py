@@ -25,7 +25,13 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
+import atexit
+import os
+import time
 from datetime import datetime
+
+PTY_NAME = "ptyname.txt"
+TIME_MARGIN = 1.0
 
 
 def get_filename(ext=".out"):
@@ -48,23 +54,16 @@ def modified_ylim(ylim, mag, ypos):
 
 
 def run_pcsim(pcsim_path):
-    import atexit
-    import os
-    import time
-
-    PTY_NAME = "ptyname.txt"
-    TIME_MARGIN = 1.0
-
     fpath, fname = os.path.split(pcsim_path)
 
     def kill_sim():
-        os.system("killall {:s}".format(fname))
+        os.system(f"killall {fname:s}")
 
-    os.system("cd {:s} && make".format(fpath))
+    os.system(f"cd {fpath:s} && make")
     if not os.path.isfile(pcsim_path):
-        raise (Exception("PC simulator can't be compiled"))
+        raise RuntimeError("PC simulator can't be compiled")
 
-    os.system("{:s} &".format(pcsim_path))  # Run in background
+    os.system(f"{pcsim_path:s} &")  # Run in background
 
     # When Jupyter kernel shutdowns, ensure all pcsim(s) are terminated
     atexit.register(kill_sim)
@@ -76,7 +75,7 @@ def run_pcsim(pcsim_path):
     while time.time() - os.stat(PTY_NAME).st_mtime > TIME_MARGIN:
         time.sleep(0.01)
 
-    return open("ptyname.txt").read()
+    return open("ptyname.txt", encoding="ascii").read()
 
 
 class Blinker:

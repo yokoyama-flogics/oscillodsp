@@ -38,7 +38,7 @@ DEFAULT_CH_COLORS = [
 DEFAULT_NEW_COLOR = "black"
 
 
-class ColorManager:
+class ColorManager:  # pylint: disable=missing-class-docstring
     def __init__(self, confman, confname="chcolors"):
         self.confman = confman
         self.confname = confname
@@ -70,14 +70,13 @@ class ColorManager:
     def all_colors(self):
         return self.__read_config()
 
-    def set_all_colors(self, colors=[]):
+    def set_all_colors(self, colors=None):
         # If colors is [], just copy it to colors, but if None, copy defaults
         # to colors
         if colors is None:
             colors = DEFAULT_CH_COLORS
             save_required = False
         else:
-            colors = colors
             save_required = True
 
         use_this_functionality = False
@@ -91,8 +90,11 @@ class ColorManager:
         self.__store_config(colors, save_required=save_required)
 
     def __add_color(self, colors, channel):
-        for ch in range(len(colors), channel + 1):
-            colors.append(DEFAULT_NEW_COLOR)
+        required_length = channel + 1
+        if len(colors) < required_length:
+            colors.extend(
+                [DEFAULT_NEW_COLOR] * (required_length - len(colors))
+            )
         return colors
 
     def __read_config(self):
