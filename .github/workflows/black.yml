@@ -1,4 +1,4 @@
-name: Isort
+name: Black
 
 on:
   push:
@@ -27,8 +27,8 @@ jobs:
       run: |
         cd hostapp
         python -m pip install --upgrade pip
-        pip install isort
-    - name: Run isort
+        pip install black
+    - name: Run Black
       run: |
         cd hostapp
-        isort --check-only .
+        black --check .
