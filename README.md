@@ -1,6 +1,9 @@
 # OscilloDSP, a Virtual Oscilloscope Software for Jupyter and Embedded Processors
 
+[![Pytest](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pytest.yml/badge.svg)](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pytest.yml)
 [![Pylint](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pylint.yml/badge.svg)](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pylint.yml)
+[![Isort](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/isort.yml/badge.svg)](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/isort.yml)
+[![Black](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/black.yml/badge.svg)](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/black.yml)
 
 Copyright (c) 2020-2024, Chubu University and Firmlogics
 
