@@ -1,7 +1,10 @@
 [MASTER]
 extension-pkg-allow-list=PySide6
 disable=fixme
-ignore-patterns=.*_pb2\.py,whitelist.py
+ignore-patterns=.*_pb2\.py,whitelist\.py
+# oscillo.py is used by *.ipynb files. The Jupyter versions (*.ipynb) are
+# obsolete and will no longer be maintained.
+ignore-paths=oscillodsp/oscillo.py
 
 [MESSAGES CONTROL]
-disable=missing-function-docstring
+disable=missing-function-docstring,duplicate-code
