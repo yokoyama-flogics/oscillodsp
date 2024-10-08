@@ -34,4 +34,4 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         cd hostapp
-        pylint qtoscillo.py
+        pylint .
