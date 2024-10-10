@@ -1,4 +1,4 @@
-# OscilloDSP, a Virtual Oscilloscope Software for Jupyter and Embedded Processors
+# OscilloDSP: Software Oscilloscope for Embedded Processors Using Qt
 
 [![Pytest](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pytest.yml/badge.svg)](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pytest.yml)
 [![Pylint](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pylint.yml/badge.svg)](https://github.com/yokoyama-flogics/oscillodsp/actions/workflows/pylint.yml)
